@@ -7,9 +7,11 @@ import (
 	"strings"
 )
 
-type InstructionFunc func([2]byte) string
-
-var InstructionMap map[byte]InstructionFunc
+type InstructionFunc func() string
+type InstructionInfo struct {
+	Length uint8
+	Ins    InstructionFunc
+}
 
 // key = {w}{register} -> [1bit][3bit]
 // TBD: key = {RtoR}{w}{Reg/RM} -> [1bit][1bit][3bit]
@@ -62,6 +64,8 @@ type InstructionDecoder struct {
 	curIdx  int64
 	nextIdx int64
 	builder strings.Builder
+
+	instructionFuncs map[byte]InstructionFunc
 }
 
 func NewDecoder(filename string) *InstructionDecoder {
@@ -81,15 +85,55 @@ func NewDecoder(filename string) *InstructionDecoder {
 		panic(err)
 	}
 
+	ins.initMap()
 	ins.builder = strings.Builder{}
 	ins.builder.WriteString("bits 16\n\n")
 	return &ins
 }
 
+func (i *InstructionDecoder) initMap() {
+	i.instructionFuncs = map[byte]InstructionFunc{
+		0b100010: i.MovInstruction,
+		0b1011:   i.MovIRegInstruction,
+	}
+}
+
+func (i *InstructionDecoder) MovIRegInstruction() string {
+	reg := i.getMaskedBits(0, 0b00000111)
+	w := i.getMaskedBits(3, 0b00000001)
+
+	regStr := RegisterMap[reg|w<<3|1<<4]
+	var data int16
+	switch w {
+	case 0b1:
+		var b []uint16
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+
+		data = int16((b[1] << 8) | b[0])
+	case 0b0:
+		i.Next()
+		// convert properly to int8 first then convert it to 16 bit
+		data = int16(int8(i.CurrentByte()))
+	}
+	return fmt.Sprintf("mov %s, %d", regStr, data)
+}
+
 func (i *InstructionDecoder) Decode() string {
+	// i.printBytes()
 	for i.Next() {
-		res := i.MovInstruction()
-		i.builder.WriteString(res + "\n")
+		b := i.CurrentByte()
+		for j := 0; j < 8; j++ {
+			ins, ok := i.instructionFuncs[b>>j]
+			if !ok {
+				continue
+			}
+			res := ins()
+			i.builder.WriteString(res + "\n")
+			break
+		}
 	}
 	return i.builder.String()
 }
@@ -103,10 +147,6 @@ func (i *InstructionDecoder) CurrentByte() byte {
 }
 func (i *InstructionDecoder) NextByte() byte {
 	return i.buf[i.nextIdx]
-}
-
-func init() {
-	InstructionMap = make(map[byte]InstructionFunc, 0)
 }
 
 func (i *InstructionDecoder) MovInstruction() string {
@@ -186,4 +226,12 @@ func (i *InstructionDecoder) getRM() byte {
 
 func (i *InstructionDecoder) getMod() byte {
 	return (i.CurrentByte() >> 6) & 0b00000011
+}
+
+func (i *InstructionDecoder) getMaskedBits(shift int64, mask byte) byte {
+	return (i.CurrentByte() >> shift) & mask
+}
+
+func (i *InstructionDecoder) printBytes() {
+	fmt.Printf("%08b\n", i.buf)
 }
