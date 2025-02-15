@@ -175,8 +175,10 @@ func (i *InstructionDecoder) MovInstruction() string {
 		i.Next()
 		var dispLO int8
 		dispLO = int8(i.CurrentByte())
-		if dispLO != 0 {
+		if dispLO > 0 {
 			RMStr = fmt.Sprintf("%s + %d", RMStr, dispLO)
+		} else if dispLO < 0 {
+			RMStr = fmt.Sprintf("%s - %d", RMStr, -dispLO)
 		}
 		RMStr = fmt.Sprint("[", RMStr, "]")
 	case 0b10:
@@ -188,7 +190,11 @@ func (i *InstructionDecoder) MovInstruction() string {
 
 		dispVal := int16(disp[1]<<8 | disp[0])
 
-		RMStr = fmt.Sprintf("%s + %d", RMStr, dispVal)
+		if dispVal > 0 {
+			RMStr = fmt.Sprintf("%s + %d", RMStr, dispVal)
+		} else if dispVal < 0 {
+			RMStr = fmt.Sprintf("%s - %d", RMStr, -dispVal)
+		}
 		RMStr = fmt.Sprint("[", RMStr, "]")
 	default:
 	}
