@@ -93,12 +93,16 @@ func NewDecoder(filename string) *InstructionDecoder {
 
 func (i *InstructionDecoder) initMap() {
 	i.instructionFuncs = map[byte]InstructionFunc{
-		0b100010: i.MovInstruction,
-		0b1011:   i.MovIRegInstruction,
+		0b100010:  i.MovInstruction,
+		0b1011:    i.MovIRegInstruction,
+		0b1100011: i.MovIRMInstruction,
+		0b1010000: i.MovMToAcc,
+		0b1010001: i.MovAccToM,
 	}
 }
 
 func (i *InstructionDecoder) MovIRegInstruction() string {
+	// fmt.Println("MOV IREG")
 	reg := i.getMaskedBits(0, 0b00000111)
 	w := i.getMaskedBits(3, 0b00000001)
 
@@ -121,6 +125,100 @@ func (i *InstructionDecoder) MovIRegInstruction() string {
 	return fmt.Sprintf("mov %s, %d", regStr, data)
 }
 
+func (i *InstructionDecoder) MovIRMInstruction() string {
+	// fmt.Println("MOV RRM")
+	w := i.getMaskedBits(0, 0b00000001)
+
+	i.Next()
+	mod := i.getMaskedBits(6, 0b00000011)
+	RtR := 0
+	if mod&0b11 == 0b11 {
+		RtR = 1
+	}
+
+	rm := i.getMaskedBits(0, 0b00000111)
+	rmStr := RegisterMap[rm|(w<<3)|byte(RtR)<<4]
+
+	switch mod {
+	case 0b00:
+		rmStr = fmt.Sprint("[", rmStr, "]")
+	case 0b01:
+		i.Next()
+		var dispLO int8
+		dispLO = int8(i.CurrentByte())
+		if dispLO > 0 {
+			rmStr = fmt.Sprintf("%s + %d", rmStr, dispLO)
+		} else if dispLO < 0 {
+			rmStr = fmt.Sprintf("%s - %d", rmStr, -dispLO)
+		}
+		rmStr = fmt.Sprint("[", rmStr, "]")
+	case 0b10:
+		var disp []uint16
+		i.Next()
+		disp = append(disp, uint16(i.CurrentByte()))
+		i.Next()
+		disp = append(disp, uint16(i.CurrentByte()))
+
+		dispVal := int16(disp[1]<<8 | disp[0])
+		if dispVal > 0 {
+			rmStr = fmt.Sprintf("%s + %d", rmStr, dispVal)
+		} else if dispVal < 0 {
+			rmStr = fmt.Sprintf("%s - %d", rmStr, -dispVal)
+		}
+
+		rmStr = fmt.Sprint("[", rmStr, "]")
+	}
+
+	switch w {
+	case 0b1:
+		var b []uint16
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+		return fmt.Sprintf("mov %s, word %d", rmStr, int16((b[1]<<8)|b[0]))
+	case 0b0:
+		i.Next()
+		return fmt.Sprintf("mov %s, byte %d", rmStr, int8(i.CurrentByte()))
+	}
+	return ""
+}
+func (i *InstructionDecoder) MovMToAcc() string {
+	w := i.getMaskedBits(0, 0b00000001)
+	regStr := "ax"
+	res := ""
+	switch w {
+	case 0b1:
+		var b []uint16
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+		res = fmt.Sprintf("mov %s, [%d]", regStr, int16((b[1]<<8)|b[0]))
+	case 0b0:
+		i.Next()
+		res = fmt.Sprintf("mov %s, [%d]", regStr, int8(i.CurrentByte()))
+	}
+	return res
+}
+func (i *InstructionDecoder) MovAccToM() string {
+	w := i.getMaskedBits(0, 0b00000001)
+	regStr := "ax"
+	res := ""
+	switch w {
+	case 0b1:
+		var b []uint16
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+		i.Next()
+		b = append(b, uint16(i.CurrentByte()))
+		res = fmt.Sprintf("mov [%d], %s", int16((b[1]<<8)|b[0]), regStr)
+	case 0b0:
+		i.Next()
+		res = fmt.Sprintf("mov [%d], %s", int8(i.CurrentByte()), regStr)
+	}
+	return res
+}
 func (i *InstructionDecoder) Decode() string {
 	// i.printBytes()
 	for i.Next() {
@@ -151,6 +249,7 @@ func (i *InstructionDecoder) NextByte() byte {
 
 func (i *InstructionDecoder) MovInstruction() string {
 	// fmt.Printf("%08b %08b\n", i.CurrentByte(), i.NextByte())
+	// fmt.Println("MOV")
 	w := i.getWide()
 	d := i.isDestination()
 
@@ -170,6 +269,14 @@ func (i *InstructionDecoder) MovInstruction() string {
 
 	switch mod {
 	case 0b00:
+		if RMStr == "bp" {
+			disp := []int16{}
+			i.Next()
+			disp = append(disp, int16(i.CurrentByte()))
+			i.Next()
+			disp = append(disp, int16(i.CurrentByte()))
+			RMStr = fmt.Sprintf("%d", uint16(disp[1]<<8|disp[0]))
+		}
 		RMStr = fmt.Sprint("[", RMStr, "]")
 	case 0b01:
 		i.Next()
