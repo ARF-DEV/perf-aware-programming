@@ -117,6 +117,8 @@ func (i *InstructionDecoder) initMap() {
 		},
 		4: {
 			0b1011: i.MovIRegInstruction,
+			0b0111: i.Jump,
+			0b1110: i.Loop,
 		},
 		7: {
 			0b1100011: i.MovIRMInstruction,
@@ -133,7 +135,6 @@ func (i *InstructionDecoder) Decode() string {
 	i.printBytes()
 	for i.Next() {
 		b := i.CurrentByte()
-		// curIdx := i.curIdx
 		for j := 0; j < 8; j++ {
 			// ins, ok := i.instructionFuncs[b>>j]
 
@@ -147,6 +148,7 @@ func (i *InstructionDecoder) Decode() string {
 			}
 			res := ins()
 			i.builder.WriteString(res + "\n")
+			// i.builder.WriteString(res + fmt.Sprintf(" %d", i.curIdx) + "\n")
 			break
 		}
 		// fmt.Println()

@@ -9,7 +9,7 @@ var aritmaticsOpCodeMap map[byte]string = map[byte]string{
 }
 
 func (i *InstructionDecoder) IncRegToMem() string {
-	fmt.Println("IRM", i.curIdx)
+	// fmt.Println("IRM", i.curIdx)
 	w := i.getMaskedBits(0, 0b00000001)
 	d := i.getMaskedBits(1, 0b00000001)
 	opBinary := i.getMaskedBits(3, 0b00000111)
@@ -102,8 +102,13 @@ func (i *InstructionDecoder) ImmediateToRM() string {
 			i.Next()
 			disp = append(disp, int16(i.CurrentByte()))
 			rmStr = fmt.Sprintf("%d", uint16(disp[1]<<8|disp[0]))
+			rmStr = fmt.Sprintf("word [%s]", rmStr)
+		} else {
+			rmStr = fmt.Sprintf("[%s]", rmStr)
+			if s == 1 {
+				rmStr = fmt.Sprintf("word %s", rmStr)
+			}
 		}
-		rmStr = fmt.Sprintf("[%s]", rmStr)
 	case 0b01:
 		i.Next()
 		disp := int8(i.CurrentByte())
@@ -136,6 +141,7 @@ func (i *InstructionDecoder) ImmediateToRM() string {
 			i.Next()
 			data := int16(i.CurrentByte())
 			dataStr = fmt.Sprintf("%d", data)
+			// rmStr = fmt.Sprintf("word %s", rmStr)
 		} else {
 			data := []int16{}
 			i.Next()
@@ -159,7 +165,7 @@ func (i *InstructionDecoder) ImmediateToRM() string {
 }
 
 func (i *InstructionDecoder) ImmediateToAcc() string {
-	fmt.Println("IA", i.curIdx)
+	// fmt.Println("IA", i.curIdx)
 	w := i.getMaskedBits(0, 0b00000001)
 	opBinary := i.getMaskedBits(3, 0b00000111)
 	reg := "ax"
