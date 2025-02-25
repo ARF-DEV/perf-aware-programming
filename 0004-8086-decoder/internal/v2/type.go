@@ -1,10 +1,21 @@
 package internal
 
-type InstructionFunc func()
+type InstructionFunc func() InstructionStatement
 type OpMode uint8
+type RegisterTable map[byte]string
+
+func (t RegisterTable) Get(mod, w, reg byte) string {
+	var noDisp byte
+	if mod == 0b11 {
+		noDisp = 1
+	} else {
+		noDisp = 0
+	}
+	return t[noDisp<<4|w<<3|reg]
+}
 
 // key = {RtoR}{w}{Reg/RM} -> [1bit][1bit][3bit]
-var RegisterMap map[byte]string = map[byte]string{
+var RegisterTab RegisterTable = map[byte]string{
 	// MOD = 11
 	0b10000: "al",
 	0b10001: "cl",
