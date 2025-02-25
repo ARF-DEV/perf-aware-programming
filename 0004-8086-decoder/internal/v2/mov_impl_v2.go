@@ -19,7 +19,7 @@ type MovInstruction struct {
 }
 
 func (i *MovInstruction) String() string {
-	return fmt.Sprintf("d:%d\tw:%d\tmod:%02b\treg:%03b\trm:%03b\nlo:%08b\thi:%08b\ndata:%d", i.d, i.w, i.mod, i.reg, i.rm, i.lo, i.hi, i.data)
+	return fmt.Sprintf("op:%d\nd:%d\tw:%d\tmod:%02b\treg:%03b\trm:%03b\nlo:%08b\thi:%08b\ndata:%d", i.op, i.d, i.w, i.mod, i.reg, i.rm, i.lo, i.hi, i.data)
 }
 func (i *MovInstruction) Disassemble() (string, error) {
 	decode, found := i.getDecoderFuncMap()[i.op]
@@ -43,26 +43,26 @@ func (i *MovInstruction) getDecoderFuncMap() DecoderFuncTable {
 func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
-	if i.isDisplacement() {
-		displacement := i.handleDisplacepment()
-		if displacement != 0 {
-			op := "+"
-			if displacement < 0 {
-				op = "-"
-				displacement *= -1
-			}
-			rmStr = fmt.Sprintf("%s %s %d", rmStr, op, displacement)
-		}
-	} else {
-		// handle if direct access
-		if i.isDirectAccess() {
-			rmStr = fmt.Sprintf("[%d]", int16(i.hi)<<8|int16(i.lo))
-		}
-	}
-
 	if i.isEffectiveAddress() {
+		if i.isDisplacement() {
+			displacement := i.handleDisplacepment()
+			if displacement != 0 {
+				op := "+"
+				if displacement < 0 {
+					op = "-"
+					displacement *= -1
+				}
+				rmStr = fmt.Sprintf("%s %s %d", rmStr, op, displacement)
+			}
+		} else {
+			// handle if direct access
+			if i.isDirectAccess() {
+				rmStr = fmt.Sprintf("%d", int16(i.hi)<<8|int16(i.lo))
+			}
+		}
 		rmStr = fmt.Sprintf("[%s]", rmStr)
 	}
+
 	var dst, src, decode string
 	decode = "mov"
 	if i.isDestination() {
@@ -85,29 +85,29 @@ func (i *MovInstruction) decodeMovImmediateToRegister() string {
 func (i *MovInstruction) decodeMovImmediateToRegisterMemory() string {
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
 
-	if i.isDisplacement() {
-		displacement := i.handleDisplacepment()
-		if displacement != 0 {
-			op := "+"
-			if displacement < 0 {
-				op = "-"
-				displacement *= -1
-			}
-			rmStr = fmt.Sprintf("%s %s %d", rmStr, op, displacement)
-		}
-	} else {
-		// handle if direct access
-		if i.isDirectAccess() {
-			rmStr = fmt.Sprintf("%d", int16(i.hi)<<8|int16(i.lo))
-		}
-	}
-
 	if i.isEffectiveAddress() {
+		if i.isDisplacement() {
+			displacement := i.handleDisplacepment()
+			if displacement != 0 {
+				op := "+"
+				if displacement < 0 {
+					op = "-"
+					displacement *= -1
+				}
+				rmStr = fmt.Sprintf("%s %s %d", rmStr, op, displacement)
+			}
+		} else {
+			// handle if direct access
+			if i.isDirectAccess() {
+				rmStr = fmt.Sprintf("[%d]", i.handleDisplacepment())
+			}
+		}
 		rmStr = fmt.Sprintf("[%s]", rmStr)
 	}
 	var dst, src, decode string
 	decode = "mov"
 	dst = rmStr
+	src = fmt.Sprintf("%d", i.data)
 	if i.isWord() {
 		src = "word " + src
 	} else {
@@ -121,12 +121,12 @@ func (i *MovInstruction) decodeMovAccumulatorFromToMemory() string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 
 	var dst, src string
-	if i.isDestination() {
+	if !i.isDestination() {
 		dst = regStr
-		src = fmt.Sprintf("[%d]", i.data)
+		src = fmt.Sprintf("[%d]", i.handleDisplacepment())
 	} else {
 		src = regStr
-		dst = fmt.Sprintf("[%d]", i.data)
+		dst = fmt.Sprintf("[%d]", i.handleDisplacepment())
 	}
 	return fmt.Sprintf("mov %s, %s", dst, src)
 }
@@ -150,9 +150,10 @@ func (i *MovInstruction) handleDisplacepment() int16 {
 	var disp int16
 	switch i.mod {
 	case 0b01:
-		disp = int16(i.lo)
-	case 0b10:
+		disp = int16(int8(i.lo))
+	case 0b10, 0b00:
 		disp = int16(uint16(i.hi)<<8 | uint16(i.lo))
 	}
+	// fmt.Println(disp)
 	return disp
 }

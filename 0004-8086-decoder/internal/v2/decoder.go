@@ -62,6 +62,8 @@ func (i *InstructionDecoder) Disassemble(writer io.StringWriter) error {
 			return err
 		}
 		writer.WriteString(fmt.Sprintln(v))
+		// fmt.Println(stmt)
+		// fmt.Println()
 	}
 	return nil
 }
@@ -85,12 +87,12 @@ func (i *InstructionDecoder) initMap() {
 	i.instructionFuncss = map[int]map[byte]InstructionFunc{
 		6: {
 			0b100010: i.MovInstruction,
+			0b101000: i.MovAccumulator,
+			0b110001: i.MovIRMInstruction,
 			// 0b000000: i.IncRegToMem,
 			// 0b001010: i.IncRegToMem,
 			// 0b001110: i.IncRegToMem,
 			// 0b100000: i.ImmediateToRM,
-			0b101000: i.MovAccumulator,
-			0b110001: i.MovIRMInstruction,
 		},
 		4: {
 			0b1011: i.MovIRegInstruction,
@@ -98,6 +100,8 @@ func (i *InstructionDecoder) initMap() {
 			// 0b1110: i.Loop,
 		},
 		7: {
+			// 0b1010001: i.MovAccumulator,
+			// 0b1010000: i.MovAccumulator,
 			// 0b0000010: i.ImmediateToAcc,
 			// 0b0010110: i.ImmediateToAcc,
 			// 0b0011110: i.ImmediateToAcc,
@@ -139,8 +143,6 @@ func (i *InstructionDecoder) MovAccumulator() InstructionStatement {
 	stmt := MovInstruction{op: MOV_ACCULUMATOR_FROM_TO_MEMORY}
 	stmt.w = i.getBits(0, 1)
 	stmt.d = i.getBits(1, 1)
-
-	i.Next()
 	stmt.reg = 0b000
 	switch stmt.w {
 	case 0b0:
@@ -233,7 +235,7 @@ func (i *InstructionDecoder) NextByte() byte {
 }
 
 func (i *InstructionDecoder) getBits(shift, nBits uint8) byte {
-	// fmt.Printf("%08b & %08b, %08b\n", i.CurrentByte()>>shift, (nBits<<1)-1, (1<<nBits)-1)
+	// fmt.Printf("%08b & %08b\n", i.CurrentByte()>>shift, (1<<nBits)-1)
 	return (i.CurrentByte() >> shift) & ((1 << nBits) - 1)
 }
 
