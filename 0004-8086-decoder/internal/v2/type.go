@@ -4,6 +4,9 @@ type InstructionFunc func() InstructionStatement
 type OpMode uint8
 type RegisterTable map[byte]string
 
+type DecoderFunc func() string
+type DecoderFuncTable map[OpMode]DecoderFunc
+
 func (t RegisterTable) Get(mod, w, reg byte) string {
 	var noDisp byte
 	if mod == 0b11 {
@@ -58,3 +61,21 @@ var RegisterTab RegisterTable = map[byte]string{
 	0b01110: "bp",
 	0b01111: "bx",
 }
+
+const (
+	INSTRUCTION_UNKNOWN OpMode = iota
+	MOV_REGISTER_FROM_TO_MEMORY
+	MOV_IMMEDIATE_TO_REGISTER
+	MOV_IMMEDIATE_TO_REGISTER_MEMORY
+	MOV_ACCULUMATOR_FROM_TO_MEMORY
+
+	ADD_REG_MEM
+	ADD_IMMEDIATE_RM
+	ADD_ACC
+	SUB_REG_MEM
+	SUB_IMMEDIATE_RM
+	SUB_ACC
+	CMP_REG_MEM
+	CMP_IMMEDIATE_RM
+	CMP_ACC
+)

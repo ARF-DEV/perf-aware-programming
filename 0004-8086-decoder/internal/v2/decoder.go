@@ -42,14 +42,18 @@ func NewDecoder(filename string) *InstructionDecoder {
 }
 
 func (i *InstructionDecoder) Decode() {
+	// fmt.Printf("%08b\n", i.buf)
 	for i.Next() {
 		b := i.CurrentByte()
+		// i.printCurrentByte()
 		for j := 0; j < 8; j++ {
 			ins, ok := i.instructionFuncss[8-j][b>>j]
 			if !ok {
 				continue
 			}
 			stmt := ins()
+			// fmt.Println(stmt)
+			// fmt.Println()
 			i.statements = append(i.statements, stmt)
 			break
 		}
@@ -73,6 +77,8 @@ func (i *InstructionDecoder) initMap() {
 		0b100010:  i.MovInstruction,
 		0b1011:    i.MovIRegInstruction,
 		0b1100011: i.MovIRMInstruction,
+		// 0b00:      i.ArithRMAcc,
+		// 0b100:     i.ArithImmediateInstruction,
 		// 0b1010000: i.MovMToAcc,
 		// 0b1010001: i.MovAccToM,
 
@@ -105,6 +111,12 @@ func (i *InstructionDecoder) initMap() {
 			// 0b0000010: i.ImmediateToAcc,
 			// 0b0010110: i.ImmediateToAcc,
 			// 0b0011110: i.ImmediateToAcc,
+		},
+		2: {
+			0b00: i.ArithRMAcc,
+		},
+		3: {
+			0b100: i.ArithImmediateInstruction,
 		},
 	}
 }
@@ -222,6 +234,147 @@ func (i *InstructionDecoder) MovIRMInstruction() InstructionStatement {
 	}
 	return &stmt
 }
+func (i *InstructionDecoder) ArithRMAcc() InstructionStatement {
+	v := i.getBits(2, 1)
+	switch v {
+	case 0b0:
+		return i.ArithRMInstruction()
+	case 0b1:
+		return i.ArithAcc()
+	}
+	return nil
+}
+
+func (i *InstructionDecoder) ArithRMInstruction() InstructionStatement {
+	stmt := ArithmeticInstruction{}
+	stmt.w = i.getBits(0, 1)
+	stmt.d = i.getBits(1, 1)
+	OperationCode := i.getBits(3, 3)
+
+	i.Next()
+	stmt.mod = i.getBits(6, 2)
+	stmt.reg = i.getBits(3, 3)
+	stmt.rm = i.getBits(0, 3)
+	switch stmt.mod {
+	case 0b00:
+		if stmt.rm == 0b110 {
+			i.Next()
+			stmt.lo = (i.CurrentByte())
+			i.Next()
+			stmt.hi = (i.CurrentByte())
+		}
+	case 0b01:
+		i.Next()
+		stmt.lo = (i.CurrentByte())
+	case 0b10:
+		i.Next()
+		stmt.lo = (i.CurrentByte())
+		i.Next()
+		stmt.hi = (i.CurrentByte())
+	}
+
+	switch OperationCode {
+	case 0b000:
+		stmt.op = ADD_REG_MEM
+	case 0b101:
+		stmt.op = SUB_REG_MEM
+	case 0b111:
+		stmt.op = CMP_REG_MEM
+	default:
+		stmt.op = INSTRUCTION_UNKNOWN
+	}
+
+	return &stmt
+}
+func (i *InstructionDecoder) ArithImmediateInstruction() InstructionStatement {
+	stmt := ArithmeticInstruction{}
+	stmt.w = i.getBits(0, 1)
+	stmt.s = i.getBits(1, 1)
+
+	i.Next()
+	stmt.mod = i.getBits(6, 2)
+	stmt.rm = i.getBits(0, 3)
+	OperationCode := i.getBits(3, 3)
+
+	switch stmt.mod {
+	case 0b00:
+		if stmt.rm == 0b110 {
+			i.Next()
+			stmt.lo = (i.CurrentByte())
+			i.Next()
+			stmt.hi = (i.CurrentByte())
+		}
+	case 0b01:
+		i.Next()
+		stmt.lo = (i.CurrentByte())
+	case 0b10:
+		i.Next()
+		stmt.lo = (i.CurrentByte())
+		i.Next()
+		stmt.hi = (i.CurrentByte())
+	}
+
+	switch stmt.w {
+	case 0b1:
+		if stmt.s == 1 {
+			i.Next()
+			stmt.data = int16(i.CurrentByte())
+		} else {
+			var b []uint16
+			i.Next()
+			b = append(b, uint16(i.CurrentByte()))
+			i.Next()
+			b = append(b, uint16(i.CurrentByte()))
+			stmt.data = int16(b[1]<<8 | b[0])
+		}
+	case 0b0:
+		i.Next()
+		stmt.data = int16(i.CurrentByte())
+	}
+
+	switch OperationCode {
+	case 0b000:
+		stmt.op = ADD_IMMEDIATE_RM
+	case 0b101:
+		stmt.op = SUB_IMMEDIATE_RM
+	case 0b111:
+		stmt.op = CMP_IMMEDIATE_RM
+	default:
+		stmt.op = INSTRUCTION_UNKNOWN
+	}
+	return &stmt
+}
+func (i *InstructionDecoder) ArithAcc() InstructionStatement {
+	stmt := ArithmeticInstruction{}
+	stmt.w = i.getBits(0, 1)
+	stmt.reg = 0b000
+	OperationCode := i.getBits(3, 3)
+
+	switch stmt.w {
+	case 0b0:
+		i.Next()
+		stmt.lo = (i.CurrentByte())
+	case 0b1:
+		i.Next()
+		stmt.lo = (i.CurrentByte())
+		i.Next()
+		stmt.hi = (i.CurrentByte())
+	default:
+	}
+
+	switch OperationCode {
+	case 0b000:
+		stmt.op = ADD_ACC
+	case 0b101:
+		stmt.op = SUB_ACC
+	case 0b111:
+		stmt.op = CMP_ACC
+	default:
+		stmt.op = INSTRUCTION_UNKNOWN
+	}
+	return &stmt
+}
+
 func (i *InstructionDecoder) Next() bool {
 	i.curIdx = i.nextIdx
 	i.nextIdx++
@@ -240,5 +393,5 @@ func (i *InstructionDecoder) getBits(shift, nBits uint8) byte {
 }
 
 func (i *InstructionDecoder) printCurrentByte() {
-	fmt.Printf("%08b", i.CurrentByte())
+	fmt.Printf("%08b\n", i.CurrentByte())
 }

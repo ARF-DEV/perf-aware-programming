@@ -2,17 +2,17 @@ package internal
 
 import "fmt"
 
-type MovInstruction struct {
-	d, w, mod, reg, rm uint8
-	lo, hi             uint8
-	data               int16
-	op                 OpMode
+type ArithmeticInstruction struct {
+	d, w, mod, reg, rm, s uint8
+	lo, hi                uint8
+	data                  int16
+	op                    OpMode
 }
 
-func (i *MovInstruction) String() string {
+func (i *ArithmeticInstruction) String() string {
 	return fmt.Sprintf("op:%d\nd:%d\tw:%d\tmod:%02b\treg:%03b\trm:%03b\nlo:%08b\thi:%08b\ndata:%d", i.op, i.d, i.w, i.mod, i.reg, i.rm, i.lo, i.hi, i.data)
 }
-func (i *MovInstruction) Disassemble() (string, error) {
+func (i *ArithmeticInstruction) Disassemble() (string, error) {
 	decode, found := i.getDecoderFuncMap()[i.op]
 	if !found {
 		return "", fmt.Errorf("error: operation not implemented")
@@ -20,18 +20,23 @@ func (i *MovInstruction) Disassemble() (string, error) {
 	return decode(), nil
 }
 
-func (i *MovInstruction) isInstruction() {}
+func (i *ArithmeticInstruction) isInstruction() {}
 
-func (i *MovInstruction) getDecoderFuncMap() DecoderFuncTable {
+func (i *ArithmeticInstruction) getDecoderFuncMap() DecoderFuncTable {
 	return DecoderFuncTable{
-		MOV_ACCULUMATOR_FROM_TO_MEMORY:   i.decodeMovAccumulatorFromToMemory,
-		MOV_IMMEDIATE_TO_REGISTER:        i.decodeMovImmediateToRegister,
-		MOV_IMMEDIATE_TO_REGISTER_MEMORY: i.decodeMovImmediateToRegisterMemory,
-		MOV_REGISTER_FROM_TO_MEMORY:      i.decodeMovRegisterFromToMemory,
+		ADD_REG_MEM:      i.decodeRM,
+		ADD_IMMEDIATE_RM: i.decodeImmediate,
+		ADD_ACC:          i.decodeAccumulator,
+		SUB_REG_MEM:      i.decodeRM,
+		SUB_IMMEDIATE_RM: i.decodeImmediate,
+		SUB_ACC:          i.decodeAccumulator,
+		CMP_REG_MEM:      i.decodeRM,
+		CMP_IMMEDIATE_RM: i.decodeImmediate,
+		CMP_ACC:          i.decodeAccumulator,
 	}
 }
 
-func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
+func (i *ArithmeticInstruction) decodeRM() string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
 	if i.isEffectiveAddress() {
@@ -46,7 +51,6 @@ func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
 				rmStr = fmt.Sprintf("%s %s %d", rmStr, op, displacement)
 			}
 		} else {
-			// handle if direct access
 			if i.isDirectAccess() {
 				rmStr = fmt.Sprintf("%d", int16(i.hi)<<8|int16(i.lo))
 			}
@@ -55,7 +59,7 @@ func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
 	}
 
 	var dst, src, decode string
-	decode = "mov"
+	decode = i.getOperationDecodeMap()[i.op]
 	if i.isDestination() {
 		dst = regStr
 		src = rmStr
@@ -68,12 +72,7 @@ func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
 	return decode
 }
 
-func (i *MovInstruction) decodeMovImmediateToRegister() string {
-	regStr := RegisterTab.Get(0b11, i.w, i.reg)
-	return fmt.Sprintf("mov %s, %d", regStr, i.data)
-}
-
-func (i *MovInstruction) decodeMovImmediateToRegisterMemory() string {
+func (i *ArithmeticInstruction) decodeImmediate() string {
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
 
 	if i.isEffectiveAddress() {
@@ -96,48 +95,61 @@ func (i *MovInstruction) decodeMovImmediateToRegisterMemory() string {
 		rmStr = fmt.Sprintf("[%s]", rmStr)
 	}
 	var dst, src, decode string
-	decode = "mov"
+	decode = i.getOperationDecodeMap()[i.op]
 	dst = rmStr
 	src = fmt.Sprintf("%d", i.data)
-	if i.isWord() {
-		src = "word " + src
-	} else {
-		src = "byte " + src
-	}
+	// if i.isWord() {
+	// 	src = "word " + src
+	// } else {
+	// 	src = "byte " + src
+	// }
 
 	decode = fmt.Sprintf("%s %s, %s", decode, dst, src)
 	return decode
 }
-func (i *MovInstruction) decodeMovAccumulatorFromToMemory() string {
+func (i *ArithmeticInstruction) decodeAccumulator() string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 
 	var dst, src string
 	if !i.isDestination() {
 		dst = regStr
-		src = fmt.Sprintf("[%d]", i.handleDisplacepment())
+		src = fmt.Sprintf("%d", i.handleDisplacepment())
 	} else {
 		src = regStr
-		dst = fmt.Sprintf("[%d]", i.handleDisplacepment())
+		dst = fmt.Sprintf("%d", i.handleDisplacepment())
 	}
-	return fmt.Sprintf("mov %s, %s", dst, src)
+	return fmt.Sprintf("%s %s, %s", i.getOperationDecodeMap()[i.op], dst, src)
+}
+func (i *ArithmeticInstruction) getOperationDecodeMap() map[OpMode]string {
+	return map[OpMode]string{
+		ADD_REG_MEM:      "add",
+		ADD_IMMEDIATE_RM: "add",
+		ADD_ACC:          "add",
+		SUB_REG_MEM:      "sub",
+		SUB_IMMEDIATE_RM: "sub",
+		SUB_ACC:          "sub",
+		CMP_REG_MEM:      "cmp",
+		CMP_IMMEDIATE_RM: "cmp",
+		CMP_ACC:          "cmp",
+	}
 }
 
-func (i *MovInstruction) isDisplacement() bool {
+func (i *ArithmeticInstruction) isDisplacement() bool {
 	return !(i.mod == 0b11 || i.mod == 0b00)
 }
-func (i *MovInstruction) isDestination() bool {
+func (i *ArithmeticInstruction) isDestination() bool {
 	return i.d == 1
 }
-func (i *MovInstruction) isWord() bool {
+func (i *ArithmeticInstruction) isWord() bool {
 	return i.w == 1
 }
-func (i *MovInstruction) isDirectAccess() bool {
+func (i *ArithmeticInstruction) isDirectAccess() bool {
 	return i.rm == 0b110 && i.mod == 0b00
 }
-func (i *MovInstruction) isEffectiveAddress() bool {
+func (i *ArithmeticInstruction) isEffectiveAddress() bool {
 	return i.mod != 0b11
 }
-func (i *MovInstruction) handleDisplacepment() int16 {
+func (i *ArithmeticInstruction) handleDisplacepment() int16 {
 	var disp int16
 	switch i.mod {
 	case 0b01:

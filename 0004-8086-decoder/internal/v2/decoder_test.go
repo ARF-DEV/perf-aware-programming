@@ -28,6 +28,10 @@ func TestDecoder(t *testing.T) {
 			fileInput: "files/listing40",
 			expected:  "files/listing40_expected",
 		},
+		{
+			fileInput: "files/listing41",
+			expected:  "files/listing41_expected",
+		},
 	}
 
 	for _, test := range testCases {
