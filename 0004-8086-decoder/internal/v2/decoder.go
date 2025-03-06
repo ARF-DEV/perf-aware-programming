@@ -102,8 +102,8 @@ func (i *InstructionDecoder) initMap() {
 		},
 		4: {
 			0b1011: i.MovIRegInstruction,
-			// 0b0111: i.Jump,
-			// 0b1110: i.Loop,
+			0b0111: i.JumpLoop,
+			0b1110: i.JumpLoop,
 		},
 		7: {
 			// 0b1010001: i.MovAccumulator,
@@ -372,6 +372,13 @@ func (i *InstructionDecoder) ArithAcc() InstructionStatement {
 	default:
 		stmt.op = INSTRUCTION_UNKNOWN
 	}
+	return &stmt
+}
+func (i *InstructionDecoder) JumpLoop() InstructionStatement {
+	stmt := JumpLoopInstruction{}
+	stmt.op = i.getBits(0, 5)
+	i.Next()
+	stmt.ipInc = int8(i.CurrentByte())
 	return &stmt
 }
 

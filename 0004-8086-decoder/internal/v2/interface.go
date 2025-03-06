@@ -4,5 +4,4 @@ type InstructionStatement interface {
 	String() string
 	Disassemble() (string, error)
 	isInstruction()
-	getDecoderFuncMap() DecoderFuncTable
 }

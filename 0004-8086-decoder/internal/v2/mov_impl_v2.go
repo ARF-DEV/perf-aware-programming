@@ -114,10 +114,10 @@ func (i *MovInstruction) decodeMovAccumulatorFromToMemory() string {
 	var dst, src string
 	if !i.isDestination() {
 		dst = regStr
-		src = fmt.Sprintf("[%d]", i.handleDisplacepment())
+		src = fmt.Sprintf("[%d]", i.handleDataInDisp())
 	} else {
 		src = regStr
-		dst = fmt.Sprintf("[%d]", i.handleDisplacepment())
+		dst = fmt.Sprintf("[%d]", i.handleDataInDisp())
 	}
 	return fmt.Sprintf("mov %s, %s", dst, src)
 }
@@ -145,6 +145,16 @@ func (i *MovInstruction) handleDisplacepment() int16 {
 	case 0b10, 0b00:
 		disp = int16(uint16(i.hi)<<8 | uint16(i.lo))
 	}
-	// fmt.Println(disp)
 	return disp
+}
+
+func (i *MovInstruction) handleDataInDisp() int16 {
+	var srcInt int16
+	switch i.w {
+	case 0:
+		srcInt = int16(int8(i.lo))
+	case 1:
+		srcInt = int16(uint16(i.hi)<<8 | uint16(i.lo))
+	}
+	return srcInt
 }

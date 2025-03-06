@@ -93,15 +93,17 @@ func (i *ArithmeticInstruction) decodeImmediate() string {
 			}
 		}
 		rmStr = fmt.Sprintf("[%s]", rmStr)
+		if i.isWord() {
+			rmStr = "word " + rmStr
+		} else {
+			rmStr = "byte " + rmStr
+		}
 	}
 	var dst, src, decode string
 	decode = i.getOperationDecodeMap()[i.op]
 	dst = rmStr
 	src = fmt.Sprintf("%d", i.data)
-	// if i.isWord() {
-	// 	src = "word " + src
-	// } else {
-	// 	src = "byte " + src
+	// if i.isEffectiveAddress() {
 	// }
 
 	decode = fmt.Sprintf("%s %s, %s", decode, dst, src)
@@ -113,10 +115,10 @@ func (i *ArithmeticInstruction) decodeAccumulator() string {
 	var dst, src string
 	if !i.isDestination() {
 		dst = regStr
-		src = fmt.Sprintf("%d", i.handleDisplacepment())
+		src = fmt.Sprintf("%d", i.handleDataInDisp())
 	} else {
 		src = regStr
-		dst = fmt.Sprintf("%d", i.handleDisplacepment())
+		dst = fmt.Sprintf("%d", i.handleDataInDisp())
 	}
 	return fmt.Sprintf("%s %s, %s", i.getOperationDecodeMap()[i.op], dst, src)
 }
@@ -157,6 +159,16 @@ func (i *ArithmeticInstruction) handleDisplacepment() int16 {
 	case 0b10, 0b00:
 		disp = int16(uint16(i.hi)<<8 | uint16(i.lo))
 	}
-	// fmt.Println(disp)
 	return disp
+}
+
+func (i *ArithmeticInstruction) handleDataInDisp() int16 {
+	var srcInt int16
+	switch i.w {
+	case 0:
+		srcInt = int16(int8(i.lo))
+	case 1:
+		srcInt = int16(uint16(i.hi)<<8 | uint16(i.lo))
+	}
+	return srcInt
 }
