@@ -20,6 +20,10 @@ func (i *ArithmeticInstruction) Disassemble() (string, error) {
 	return decode(), nil
 }
 
+func (i *ArithmeticInstruction) Simulate(mem *Memory) {
+
+}
+
 func (i *ArithmeticInstruction) isInstruction() {}
 
 func (i *ArithmeticInstruction) getDecoderFuncMap() DecoderFuncTable {

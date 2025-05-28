@@ -20,6 +20,17 @@ func (i *MovInstruction) Disassemble() (string, error) {
 	return decode(), nil
 }
 
+func (i *MovInstruction) Simulate(mem *Memory) {
+	// simple immediate to memory
+	// TODO: do all mov operations
+	previous := mem[i.reg]
+	mem[i.reg] = i.data
+	current := mem[i.reg]
+	regName := REGISTERS_NAME[i.reg]
+	operationStr, _ := i.Disassemble()
+	fmt.Printf("%s ; %s:0x%x->0x%x\n", operationStr, regName, previous, current)
+}
+
 func (i *MovInstruction) isInstruction() {}
 
 func (i *MovInstruction) getDecoderFuncMap() DecoderFuncTable {

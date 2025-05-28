@@ -5,18 +5,15 @@ import (
 	"fmt"
 	"io"
 	"os"
-	"strings"
 )
 
 type InstructionDecoder struct {
 	buf        []byte
 	curIdx     int64
 	nextIdx    int64
-	builder    strings.Builder
 	statements []InstructionStatement
 
-	instructionFuncs  map[byte]InstructionFunc
-	instructionFuncss map[int]map[byte]InstructionFunc
+	instructionFuncs map[int]map[byte]InstructionFunc
 }
 
 func NewDecoder(filename string) *InstructionDecoder {
@@ -36,24 +33,22 @@ func NewDecoder(filename string) *InstructionDecoder {
 		panic(err)
 	}
 	ins.initMap()
-	ins.builder = strings.Builder{}
-	ins.builder.WriteString("bits 16\n\n")
 	return &ins
 }
 
+func (i *InstructionDecoder) Statements() Statements {
+	return i.statements
+}
+
 func (i *InstructionDecoder) Decode() {
-	// fmt.Printf("%08b\n", i.buf)
 	for i.Next() {
 		b := i.CurrentByte()
-		// i.printCurrentByte()
 		for j := 0; j < 8; j++ {
-			ins, ok := i.instructionFuncss[8-j][b>>j]
+			ins, ok := i.instructionFuncs[8-j][b>>j]
 			if !ok {
 				continue
 			}
 			stmt := ins()
-			// fmt.Println(stmt)
-			// fmt.Println()
 			i.statements = append(i.statements, stmt)
 			break
 		}
@@ -73,44 +68,16 @@ func (i *InstructionDecoder) Disassemble(writer io.StringWriter) error {
 }
 
 func (i *InstructionDecoder) initMap() {
-	i.instructionFuncs = map[byte]InstructionFunc{
-		0b100010:  i.MovInstruction,
-		0b1011:    i.MovIRegInstruction,
-		0b1100011: i.MovIRMInstruction,
-		// 0b00:      i.ArithRMAcc,
-		// 0b100:     i.ArithImmediateInstruction,
-		// 0b1010000: i.MovMToAcc,
-		// 0b1010001: i.MovAccToM,
-
-		// 0b000000:  i.IncRegToMem,
-		// 0b001010:  i.IncRegToMem,
-		// 0b001110:  i.IncRegToMem,
-		// 0b100000:  i.ImmediateToRM,
-		// 0b0000010: i.ImmediateToAcc,
-		// 0b0010110: i.ImmediateToAcc,
-		// 0b0011110: i.ImmediateToAcc,
-	}
-	i.instructionFuncss = map[int]map[byte]InstructionFunc{
+	i.instructionFuncs = map[int]map[byte]InstructionFunc{
 		6: {
 			0b100010: i.MovInstruction,
 			0b101000: i.MovAccumulator,
 			0b110001: i.MovIRMInstruction,
-			// 0b000000: i.IncRegToMem,
-			// 0b001010: i.IncRegToMem,
-			// 0b001110: i.IncRegToMem,
-			// 0b100000: i.ImmediateToRM,
 		},
 		4: {
 			0b1011: i.MovIRegInstruction,
 			0b0111: i.JumpLoop,
 			0b1110: i.JumpLoop,
-		},
-		7: {
-			// 0b1010001: i.MovAccumulator,
-			// 0b1010000: i.MovAccumulator,
-			// 0b0000010: i.ImmediateToAcc,
-			// 0b0010110: i.ImmediateToAcc,
-			// 0b0011110: i.ImmediateToAcc,
 		},
 		2: {
 			0b00: i.ArithRMAcc,

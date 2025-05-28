@@ -1,5 +1,10 @@
 package internal
 
+import (
+	"fmt"
+	"strings"
+)
+
 type InstructionFunc func() InstructionStatement
 type OpMode uint8
 type RegisterTable map[byte]string
@@ -79,3 +84,27 @@ const (
 	CMP_IMMEDIATE_RM
 	CMP_ACC
 )
+
+type Memory [8]int16
+
+var REGISTERS_NAME = [8]string{"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
+
+func (m Memory) String() string {
+
+	// Final registers:
+	//   ax: 0x0001 (1)
+	//   bx: 0x0002 (2)
+	//   cx: 0x0003 (3)
+	//   dx: 0x0004 (4)
+	//   sp: 0x0005 (5)
+	//   bp: 0x0006 (6)
+	//   si: 0x0007 (7)
+	//   di: 0x0008 (8)
+	builder := strings.Builder{}
+
+	for i := range m {
+		fmt.Fprintf(&builder, "%s: 0x%04x (%d)\n", REGISTERS_NAME[i], m[i], m[i])
+	}
+
+	return builder.String()
+}

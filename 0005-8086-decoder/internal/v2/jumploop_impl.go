@@ -39,4 +39,5 @@ func (i *JumpLoopInstruction) Disassemble() (string, error) {
 	return fmt.Sprintf("%d", i.ipInc), nil
 }
 
-func (i *JumpLoopInstruction) isInstruction() {}
+func (i *JumpLoopInstruction) isInstruction()       {}
+func (i *JumpLoopInstruction) Simulate(mem *Memory) {}
