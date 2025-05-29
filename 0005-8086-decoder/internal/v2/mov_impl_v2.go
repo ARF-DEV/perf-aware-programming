@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type MovInstruction struct {
 	d, w, mod, reg, rm uint8
@@ -23,12 +26,13 @@ func (i *MovInstruction) Disassemble() (string, error) {
 func (i *MovInstruction) Simulate(mem *Memory) {
 	// simple immediate to memory
 	// TODO: do all mov operations
-	previous := mem[i.reg]
-	mem[i.reg] = i.data
-	current := mem[i.reg]
-	regName := REGISTERS_NAME[i.reg]
-	operationStr, _ := i.Disassemble()
-	fmt.Printf("%s ; %s:0x%x->0x%x\n", operationStr, regName, previous, current)
+	sim, ok := i.getSimulateFuncMap()[i.op]
+	if !ok {
+		log.Printf("error: simulate function for op %d are not implemented", i.op)
+		return
+	}
+	sim(mem)
+
 }
 
 func (i *MovInstruction) isInstruction() {}

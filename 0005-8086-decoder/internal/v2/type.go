@@ -12,6 +12,9 @@ type RegisterTable map[byte]string
 type DecoderFunc func() string
 type DecoderFuncTable map[OpMode]DecoderFunc
 
+type SimulateFunc func(mem *Memory)
+type SimulateFuncTable map[OpMode]SimulateFunc
+
 func (t RegisterTable) Get(mod, w, reg byte) string {
 	var noDisp byte
 	if mod == 0b11 {
