@@ -1,6 +1,9 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+	"log"
+)
 
 type ArithmeticInstruction struct {
 	d, w, mod, reg, rm, s uint8
@@ -20,8 +23,13 @@ func (i *ArithmeticInstruction) Disassemble() (string, error) {
 	return decode(), nil
 }
 
-func (i *ArithmeticInstruction) Simulate(mem *Memory) {
-
+func (i *ArithmeticInstruction) Simulate(mem *Memory, flags *Flags) {
+	sim, found := i.getSimulateFuncMap()[i.op]
+	if !found {
+		log.Printf("error: simulate function for op %d are not implemented", i.op)
+		return
+	}
+	sim(mem, flags)
 }
 
 func (i *ArithmeticInstruction) isInstruction() {}
@@ -40,6 +48,19 @@ func (i *ArithmeticInstruction) getDecoderFuncMap() DecoderFuncTable {
 	}
 }
 
+func (i *ArithmeticInstruction) getSimulateFuncMap() SimulateFuncTable {
+	return SimulateFuncTable{
+		ADD_REG_MEM:      i.SimulateRegRM,
+		ADD_IMMEDIATE_RM: i.SimulateImmediate,
+		// ADD_ACC:          i.Simulate,
+		SUB_REG_MEM:      i.SimulateRegRM,
+		SUB_IMMEDIATE_RM: i.SimulateImmediate,
+		// SUB_ACC:          i.decodeAccumulator,
+		CMP_REG_MEM:      i.SimulateRegRM,
+		CMP_IMMEDIATE_RM: i.SimulateImmediate,
+		// CMP_ACC:          i.decodeAccumulator,
+	}
+}
 func (i *ArithmeticInstruction) decodeRM() string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)

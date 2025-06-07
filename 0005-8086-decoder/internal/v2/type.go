@@ -12,7 +12,7 @@ type RegisterTable map[byte]string
 type DecoderFunc func() string
 type DecoderFuncTable map[OpMode]DecoderFunc
 
-type SimulateFunc func(mem *Memory)
+type SimulateFunc func(mem *Memory, flags *Flags)
 type SimulateFuncTable map[OpMode]SimulateFunc
 
 func (t RegisterTable) Get(mod, w, reg byte) string {
@@ -89,7 +89,33 @@ const (
 )
 
 type Memory [8]int16
+type Flags [2]bool
+type FlagsIdx int
 
+func (f Flags) Get(idx FlagsIdx) bool {
+	return f[idx]
+}
+
+func (f *Flags) Set(idx FlagsIdx, val bool) {
+	f[idx] = val
+}
+func (f Flags) String() string {
+	str := ""
+	for i, v := range f {
+		if !v {
+			continue
+		}
+		str += FLAGS_NAME[i]
+	}
+	return str
+}
+
+const (
+	FLAGS_ZERO FlagsIdx = iota
+	FLAGS_SIGN
+)
+
+var FLAGS_NAME = [2]string{"Z", "S"}
 var REGISTERS_NAME = [8]string{"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
 
 func (m Memory) String() string {

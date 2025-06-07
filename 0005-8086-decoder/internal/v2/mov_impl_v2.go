@@ -23,7 +23,7 @@ func (i *MovInstruction) Disassemble() (string, error) {
 	return decode(), nil
 }
 
-func (i *MovInstruction) Simulate(mem *Memory) {
+func (i *MovInstruction) Simulate(mem *Memory, flags *Flags) {
 	// simple immediate to memory
 	// TODO: do all mov operations
 	sim, ok := i.getSimulateFuncMap()[i.op]
@@ -31,7 +31,7 @@ func (i *MovInstruction) Simulate(mem *Memory) {
 		log.Printf("error: simulate function for op %d are not implemented", i.op)
 		return
 	}
-	sim(mem)
+	sim(mem, flags)
 
 }
 
