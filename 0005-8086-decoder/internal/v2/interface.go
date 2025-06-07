@@ -3,7 +3,7 @@ package internal
 type InstructionStatement interface {
 	String() string
 	Disassemble() (string, error)
-	Simulate(Memory *Memory)
+	Simulate(Memory *Memory, flags *Flags)
 	isInstruction()
 }
 

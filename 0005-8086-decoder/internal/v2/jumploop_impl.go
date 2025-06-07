@@ -1,6 +1,8 @@
 package internal
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var jumpLoopTable map[byte]string = map[byte]string{
 	0b10100: "je",
@@ -39,5 +41,5 @@ func (i *JumpLoopInstruction) Disassemble() (string, error) {
 	return fmt.Sprintf("%d", i.ipInc), nil
 }
 
-func (i *JumpLoopInstruction) isInstruction()       {}
-func (i *JumpLoopInstruction) Simulate(mem *Memory) {}
+func (i *JumpLoopInstruction) isInstruction()                     {}
+func (i *JumpLoopInstruction) Simulate(mem *Memory, flags *Flags) {}

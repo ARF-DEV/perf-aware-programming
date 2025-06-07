@@ -11,7 +11,7 @@ func (i *MovInstruction) getSimulateFuncMap() SimulateFuncTable {
 	}
 }
 
-func (i *MovInstruction) SimulateMovImmidiateToRegister(mem *Memory) {
+func (i *MovInstruction) SimulateMovImmidiateToRegister(mem *Memory, flags *Flags) {
 	previous := mem[i.reg]
 	mem[i.reg] = i.data
 	current := mem[i.reg]
@@ -20,7 +20,7 @@ func (i *MovInstruction) SimulateMovImmidiateToRegister(mem *Memory) {
 	fmt.Printf("%s ; %s:0x%x->0x%x\n", operationStr, regName, previous, current)
 }
 
-func (i *MovInstruction) SimulateMovRMFromToRegister(mem *Memory) {
+func (i *MovInstruction) SimulateMovRMFromToRegister(mem *Memory, flags *Flags) {
 	// only the non-memory mov are implemented
 	var dest, src uint8 = 0, 0
 	if i.isDestination() {
