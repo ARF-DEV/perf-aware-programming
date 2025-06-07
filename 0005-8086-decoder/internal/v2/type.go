@@ -132,7 +132,7 @@ func (m Memory) String() string {
 	builder := strings.Builder{}
 
 	for i := range m {
-		fmt.Fprintf(&builder, "%s: 0x%04x (%d)\n", REGISTERS_NAME[i], m[i], m[i])
+		fmt.Fprintf(&builder, "%s: 0x%04x (%d)\n", REGISTERS_NAME[i], uint16(m[i]), m[i])
 	}
 
 	return builder.String()
