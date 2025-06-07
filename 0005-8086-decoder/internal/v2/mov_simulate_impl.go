@@ -17,7 +17,7 @@ func (i *MovInstruction) SimulateMovImmidiateToRegister(mem *Memory, flags *Flag
 	current := mem[i.reg]
 	regName := REGISTERS_NAME[i.reg]
 	operationStr, _ := i.Disassemble()
-	fmt.Printf("%s ; %s:0x%x->0x%x\n", operationStr, regName, previous, current)
+	fmt.Printf("%s ; %s:0x%x->0x%x (%v)\n", operationStr, regName, uint16(previous), uint16(current), current)
 }
 
 func (i *MovInstruction) SimulateMovRMFromToRegister(mem *Memory, flags *Flags) {
@@ -35,5 +35,5 @@ func (i *MovInstruction) SimulateMovRMFromToRegister(mem *Memory, flags *Flags) 
 	current := mem[dest]
 	regName := REGISTERS_NAME[dest]
 	operationStr, _ := i.Disassemble()
-	fmt.Printf("%s ; %s:0x%x->0x%x\n", operationStr, regName, previous, current)
+	fmt.Printf("%s ; %s:0x%x->0x%x (%v)\n", operationStr, regName, uint16(previous), uint16(current), current)
 }

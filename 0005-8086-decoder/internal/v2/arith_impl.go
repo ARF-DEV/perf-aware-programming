@@ -16,7 +16,6 @@ func (i *ArithmeticInstruction) String() string {
 	return fmt.Sprintf("op:%d\nd:%d\tw:%d\tmod:%02b\treg:%03b\trm:%03b\nlo:%08b\thi:%08b\ndata:%d", i.op, i.d, i.w, i.mod, i.reg, i.rm, i.lo, i.hi, i.data)
 }
 func (i *ArithmeticInstruction) Disassemble() (string, error) {
-	fmt.Println("aokdawokd", i.op)
 	decode, found := i.getDecoderFuncMap()[i.op]
 	if !found {
 		return "", fmt.Errorf("error: operation not implemented")

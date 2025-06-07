@@ -96,8 +96,18 @@ func (f Flags) Get(idx FlagsIdx) bool {
 	return f[idx]
 }
 
-func (f Flags) Set(idx FlagsIdx, val bool) {
+func (f *Flags) Set(idx FlagsIdx, val bool) {
 	f[idx] = val
+}
+func (f Flags) String() string {
+	str := ""
+	for i, v := range f {
+		if !v {
+			continue
+		}
+		str += FLAGS_NAME[i]
+	}
+	return str
 }
 
 const (
@@ -105,6 +115,7 @@ const (
 	FLAGS_SIGN
 )
 
+var FLAGS_NAME = [2]string{"Z", "S"}
 var REGISTERS_NAME = [8]string{"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
 
 func (m Memory) String() string {
