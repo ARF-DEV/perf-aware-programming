@@ -50,6 +50,7 @@ func (i *InstructionDecoder) Decode() {
 			}
 			stmt := ins()
 			i.statements = append(i.statements, stmt)
+			// todo the jump we can use the i.nextIdx to set the next instruction to run
 			break
 		}
 	}
