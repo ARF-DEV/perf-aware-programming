@@ -8,12 +8,13 @@ import (
 )
 
 type InstructionDecoder struct {
-	buf        []byte
-	curIdx     int64
-	nextIdx    int64
-	statements []InstructionStatement
-
+	buf              []byte
+	curIdx           int64
+	nextIdx          int64
+	statements       []InstructionStatement
 	instructionFuncs map[int]map[byte]InstructionFunc
+
+	simulator Simulator
 }
 
 func NewDecoder(filename string) *InstructionDecoder {
@@ -33,6 +34,11 @@ func NewDecoder(filename string) *InstructionDecoder {
 		panic(err)
 	}
 	ins.initMap()
+	ins.simulator = Simulator{
+		memory: Memory{},
+		flags:  Flags{},
+		ip:     &ins.nextIdx,
+	}
 	return &ins
 }
 
@@ -40,21 +46,34 @@ func (i *InstructionDecoder) Statements() Statements {
 	return i.statements
 }
 
-func (i *InstructionDecoder) Decode() {
+func (i *InstructionDecoder) Decode(simulate bool) {
 	for i.Next() {
 		b := i.CurrentByte()
+		prevIdx := i.curIdx
 		for j := 0; j < 8; j++ {
 			ins, ok := i.instructionFuncs[8-j][b>>j]
 			if !ok {
 				continue
 			}
 			stmt := ins()
+			if simulate {
+				// todo the jump we can use the i.nextIdx to set the next instruction to run
+				stmt.Simulate(&i.simulator)
+			}
+			// fmt.Println(i.nextIdx)
 			i.statements = append(i.statements, stmt)
-			// todo the jump we can use the i.nextIdx to set the next instruction to run
 			break
 		}
+		nextIdx := i.nextIdx
+		fmt.Printf("ip:0x%x->0x%x", uint64(prevIdx), uint64(nextIdx))
+		fmt.Println()
+	}
+
+	if simulate {
+		fmt.Println(i.simulator.String())
 	}
 }
+
 func (i *InstructionDecoder) Disassemble(writer io.StringWriter) error {
 	for _, stmt := range i.statements {
 		v, err := stmt.Disassemble()
@@ -343,8 +362,10 @@ func (i *InstructionDecoder) ArithAcc() InstructionStatement {
 	return &stmt
 }
 func (i *InstructionDecoder) JumpLoop() InstructionStatement {
-	stmt := JumpLoopInstruction{}
-	stmt.op = i.getBits(0, 5)
+	stmt := JumpLoopInstruction{
+		op: JUMP,
+	}
+	stmt.opByte = i.getBits(0, 5)
 	i.Next()
 	stmt.ipInc = int8(i.CurrentByte())
 	return &stmt
@@ -352,7 +373,9 @@ func (i *InstructionDecoder) JumpLoop() InstructionStatement {
 
 func (i *InstructionDecoder) Next() bool {
 	i.curIdx = i.nextIdx
-	i.nextIdx++
+	if int(i.nextIdx+1) <= len(i.buf) {
+		i.nextIdx++
+	}
 	return int(i.curIdx) < len(i.buf)
 }
 func (i *InstructionDecoder) CurrentByte() byte {

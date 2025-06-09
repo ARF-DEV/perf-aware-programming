@@ -23,13 +23,13 @@ func (i *ArithmeticInstruction) Disassemble() (string, error) {
 	return decode(), nil
 }
 
-func (i *ArithmeticInstruction) Simulate(mem *Memory, flags *Flags) {
+func (i *ArithmeticInstruction) Simulate(simulator *Simulator) {
 	sim, found := i.getSimulateFuncMap()[i.op]
 	if !found {
 		log.Printf("error: simulate function for op %d are not implemented", i.op)
 		return
 	}
-	sim(mem, flags)
+	sim(simulator)
 }
 
 func (i *ArithmeticInstruction) isInstruction() {}

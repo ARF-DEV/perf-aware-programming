@@ -11,16 +11,16 @@ func (i *MovInstruction) getSimulateFuncMap() SimulateFuncTable {
 	}
 }
 
-func (i *MovInstruction) SimulateMovImmidiateToRegister(mem *Memory, flags *Flags) {
-	previous := mem[i.reg]
-	mem[i.reg] = i.data
-	current := mem[i.reg]
+func (i *MovInstruction) SimulateMovImmidiateToRegister(sim *Simulator) {
+	previous := sim.memory[i.reg]
+	sim.memory[i.reg] = i.data
+	current := sim.memory[i.reg]
 	regName := REGISTERS_NAME[i.reg]
 	operationStr, _ := i.Disassemble()
-	fmt.Printf("%s ; %s:0x%x->0x%x (%v)\n", operationStr, regName, uint16(previous), uint16(current), current)
+	fmt.Printf("%s; %s:0x%x->0x%x (%v); ", operationStr, regName, uint16(previous), uint16(current), current)
 }
 
-func (i *MovInstruction) SimulateMovRMFromToRegister(mem *Memory, flags *Flags) {
+func (i *MovInstruction) SimulateMovRMFromToRegister(sim *Simulator) {
 	// only the non-memory mov are implemented
 	var dest, src uint8 = 0, 0
 	if i.isDestination() {
@@ -30,10 +30,10 @@ func (i *MovInstruction) SimulateMovRMFromToRegister(mem *Memory, flags *Flags) 
 		dest = i.rm
 		src = i.reg
 	}
-	previous := mem[dest]
-	mem[dest] = mem[src]
-	current := mem[dest]
+	previous := sim.memory[dest]
+	sim.memory[dest] = sim.memory[src]
+	current := sim.memory[dest]
 	regName := REGISTERS_NAME[dest]
 	operationStr, _ := i.Disassemble()
-	fmt.Printf("%s ; %s:0x%x->0x%x (%v)\n", operationStr, regName, uint16(previous), uint16(current), current)
+	fmt.Printf("%s; %s:0x%x->0x%x (%v); ", operationStr, regName, uint16(previous), uint16(current), current)
 }

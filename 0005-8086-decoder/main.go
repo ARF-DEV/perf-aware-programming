@@ -18,13 +18,11 @@ func main() {
 	filename := flag.Args()[0]
 
 	decoder := internal.NewDecoder(filename)
-	decoder.Decode()
+	decoder.Decode(*flagExec)
 	if *flagExec {
-		simulator := internal.NewSimulator(decoder.Statements())
-		simulator.Simulate()
-	} else {
-		if err := decoder.Disassemble(os.Stdout); err != nil {
-			panic(err)
-		}
+		return
+	}
+	if err := decoder.Disassemble(os.Stdout); err != nil {
+		panic(err)
 	}
 }

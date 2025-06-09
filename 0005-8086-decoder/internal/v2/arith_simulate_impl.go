@@ -4,8 +4,8 @@ import (
 	"fmt"
 )
 
-func (i *ArithmeticInstruction) SimulateRegRM(memory *Memory, flags *Flags) {
-	prevFlags := *flags
+func (i *ArithmeticInstruction) SimulateRegRM(simulator *Simulator) {
+	prevFlags := simulator.flags
 	var dest, src uint8 = 0, 0
 	if i.isDestination() {
 		dest = i.reg
@@ -14,45 +14,45 @@ func (i *ArithmeticInstruction) SimulateRegRM(memory *Memory, flags *Flags) {
 		dest = i.rm
 		src = i.reg
 	}
-	previous := memory[dest]
-	value := memory[dest]
+	previous := simulator.memory[dest]
+	value := simulator.memory[dest]
 	switch i.op {
 	case SUB_REG_MEM:
-		value -= memory[src]
+		value -= simulator.memory[src]
 	case ADD_REG_MEM:
-		value += memory[src]
+		value += simulator.memory[src]
 	case CMP_REG_MEM:
-		value = memory[dest] - memory[src]
+		value = simulator.memory[dest] - simulator.memory[src]
 	}
 
 	if value == 0 {
-		flags.Set(FLAGS_ZERO, true)
+		simulator.flags.Set(FLAGS_ZERO, true)
 	} else {
-		flags.Set(FLAGS_ZERO, false)
+		simulator.flags.Set(FLAGS_ZERO, false)
 	}
 
 	if (uint16(value) >> 15) == 1 {
-		flags.Set(FLAGS_SIGN, true)
+		simulator.flags.Set(FLAGS_SIGN, true)
 	} else {
-		flags.Set(FLAGS_SIGN, false)
+		simulator.flags.Set(FLAGS_SIGN, false)
 	}
 
 	switch i.op {
 	case SUB_REG_MEM, ADD_REG_MEM:
-		memory[dest] = value
+		simulator.memory[dest] = value
 	case CMP_REG_MEM:
 	}
 
-	current := memory[dest]
-	curFlags := *flags
+	current := simulator.memory[dest]
+	curFlags := simulator.flags
 	regName := REGISTERS_NAME[dest]
 	operationStr, _ := i.Disassemble()
-	fmt.Printf("%s ; %s:0x%x->0x%x (%d); flags:%v->%v\n", operationStr, regName, uint16(previous), uint16(current), current, prevFlags.String(), curFlags.String())
+	fmt.Printf("%s; %s:0x%x->0x%x (%d); flags:%v->%v; ", operationStr, regName, uint16(previous), uint16(current), current, prevFlags.String(), curFlags.String())
 }
-func (i *ArithmeticInstruction) SimulateImmediate(memory *Memory, flags *Flags) {
-	prevFlags := *flags
-	previous := memory[i.rm]
-	value := memory[i.rm]
+func (i *ArithmeticInstruction) SimulateImmediate(simulator *Simulator) {
+	prevFlags := simulator.flags
+	previous := simulator.memory[i.rm]
+	value := simulator.memory[i.rm]
 
 	switch i.op {
 	case SUB_IMMEDIATE_RM:
@@ -64,25 +64,25 @@ func (i *ArithmeticInstruction) SimulateImmediate(memory *Memory, flags *Flags) 
 	}
 
 	if value == 0 {
-		flags.Set(FLAGS_ZERO, true)
+		simulator.flags.Set(FLAGS_ZERO, true)
 	} else {
-		flags.Set(FLAGS_ZERO, false)
+		simulator.flags.Set(FLAGS_ZERO, false)
 	}
 
 	if (value << 15) == 1 {
-		flags.Set(FLAGS_SIGN, true)
+		simulator.flags.Set(FLAGS_SIGN, true)
 	} else {
-		flags.Set(FLAGS_SIGN, false)
+		simulator.flags.Set(FLAGS_SIGN, false)
 	}
 
 	switch i.op {
 	case SUB_IMMEDIATE_RM, ADD_IMMEDIATE_RM:
-		memory[i.rm] = value
+		simulator.memory[i.rm] = value
 	case CMP_IMMEDIATE_RM:
 	}
-	current := memory[i.rm]
+	current := simulator.memory[i.rm]
 	regName := REGISTERS_NAME[i.rm]
-	curFlags := *flags
+	curFlags := simulator.flags
 	operationStr, _ := i.Disassemble()
-	fmt.Printf("%s ; %s:0x%x->0x%x (%d); flags:%v->%v\n", operationStr, regName, uint16(previous), uint16(current), current, prevFlags, curFlags)
+	fmt.Printf("%s; %s:0x%x->0x%x (%d); flags:%v->%v; ", operationStr, regName, uint16(previous), uint16(current), current, prevFlags, curFlags)
 }

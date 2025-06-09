@@ -12,7 +12,7 @@ type RegisterTable map[byte]string
 type DecoderFunc func() string
 type DecoderFuncTable map[OpMode]DecoderFunc
 
-type SimulateFunc func(mem *Memory, flags *Flags)
+type SimulateFunc func(sim *Simulator)
 type SimulateFuncTable map[OpMode]SimulateFunc
 
 func (t RegisterTable) Get(mod, w, reg byte) string {
@@ -86,6 +86,8 @@ const (
 	CMP_REG_MEM
 	CMP_IMMEDIATE_RM
 	CMP_ACC
+
+	JUMP
 )
 
 type Memory [8]int16
@@ -132,7 +134,7 @@ func (m Memory) String() string {
 	builder := strings.Builder{}
 
 	for i := range m {
-		fmt.Fprintf(&builder, "%s: 0x%04x (%d)\n", REGISTERS_NAME[i], m[i], m[i])
+		fmt.Fprintf(&builder, "%s: 0x%04x (%d)\n", REGISTERS_NAME[i], uint16(m[i]), m[i])
 	}
 
 	return builder.String()

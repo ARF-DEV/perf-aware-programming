@@ -37,7 +37,7 @@ func TestDecoder(t *testing.T) {
 	for _, test := range testCases {
 		t.Run(test.fileInput, func(t *testing.T) {
 			decoder := NewDecoder(test.fileInput)
-			decoder.Decode()
+			decoder.Decode(false)
 			b, err := os.ReadFile(test.expected)
 			if err != nil {
 				t.Error(err)
