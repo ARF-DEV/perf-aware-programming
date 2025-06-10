@@ -3,4 +3,4 @@ This repo perpose is to store my Performance Aware Programming Homework Solution
 - 0002 -> 2. Decoding Multiple Instructions and Suffixes
 - 0003 -> 3. Opcode Patterns in 8086 Arithmetic
 - 0004 -> 3. Opcode Patterns in 8086 Arithmetic (Refactor Version in preparation for Lesson 6)
-- 0005 -> 6. Simulating Non-memory MOVs and 7. Simulating ADD, SUB, CMP
+- 0005 -> 6. Simulating Non-memory MOVs, 7. Simulating ADD, SUB, CMP, 8. Simulating Conditional Jumps, 9. Simulating Memory
