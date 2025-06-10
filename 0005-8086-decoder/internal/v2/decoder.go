@@ -35,9 +35,9 @@ func NewDecoder(filename string) *InstructionDecoder {
 	}
 	ins.initMap()
 	ins.simulator = Simulator{
-		memory: Memory{},
-		flags:  Flags{},
-		ip:     &ins.nextIdx,
+		register: Register{},
+		flags:    Flags{},
+		ip:       &ins.nextIdx,
 	}
 	return &ins
 }
@@ -65,8 +65,10 @@ func (i *InstructionDecoder) Decode(simulate bool) {
 			break
 		}
 		nextIdx := i.nextIdx
-		fmt.Printf("ip:0x%x->0x%x", uint64(prevIdx), uint64(nextIdx))
-		fmt.Println()
+		if simulate {
+			fmt.Printf("ip:0x%x->0x%x", uint64(prevIdx), uint64(nextIdx))
+			fmt.Println()
+		}
 	}
 
 	if simulate {

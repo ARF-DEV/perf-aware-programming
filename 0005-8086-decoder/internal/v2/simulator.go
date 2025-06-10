@@ -6,15 +6,15 @@ import (
 )
 
 type Simulator struct {
-	memory Memory
-	flags  Flags
-	ip     *int64 // instruction pointer
-	// curIp  *int64 // helper to print current idx
+	register Register
+	flags    Flags
+	ip       *int64 // instruction pointer
+	memory   Memory
 }
 
 func (s *Simulator) String() string {
 	b := strings.Builder{}
-	fmt.Fprintf(&b, "Final registers:\n%v", s.memory)
+	fmt.Fprintf(&b, "Final registers:\n%v", s.register)
 	fmt.Fprintf(&b, "ip: 0x%04x (%d)\n", uint64(*s.ip), *s.ip)
 	fmt.Fprintln(&b, "Final flags: ", s.flags)
 	return b.String()

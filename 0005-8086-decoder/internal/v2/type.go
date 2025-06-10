@@ -90,7 +90,8 @@ const (
 	JUMP
 )
 
-type Memory [8]int16
+type Register [8]int16
+type Memory [1024 * 1024]uint8
 type Flags [2]bool
 type FlagsIdx int
 
@@ -120,7 +121,7 @@ const (
 var FLAGS_NAME = [2]string{"Z", "S"}
 var REGISTERS_NAME = [8]string{"ax", "cx", "dx", "bx", "sp", "bp", "si", "di"}
 
-func (m Memory) String() string {
+func (m Register) String() string {
 
 	// Final registers:
 	//   ax: 0x0001 (1)

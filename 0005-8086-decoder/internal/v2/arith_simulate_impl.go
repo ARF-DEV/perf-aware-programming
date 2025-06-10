@@ -14,15 +14,15 @@ func (i *ArithmeticInstruction) SimulateRegRM(simulator *Simulator) {
 		dest = i.rm
 		src = i.reg
 	}
-	previous := simulator.memory[dest]
-	value := simulator.memory[dest]
+	previous := simulator.register[dest]
+	value := simulator.register[dest]
 	switch i.op {
 	case SUB_REG_MEM:
-		value -= simulator.memory[src]
+		value -= simulator.register[src]
 	case ADD_REG_MEM:
-		value += simulator.memory[src]
+		value += simulator.register[src]
 	case CMP_REG_MEM:
-		value = simulator.memory[dest] - simulator.memory[src]
+		value = simulator.register[dest] - simulator.register[src]
 	}
 
 	if value == 0 {
@@ -39,11 +39,11 @@ func (i *ArithmeticInstruction) SimulateRegRM(simulator *Simulator) {
 
 	switch i.op {
 	case SUB_REG_MEM, ADD_REG_MEM:
-		simulator.memory[dest] = value
+		simulator.register[dest] = value
 	case CMP_REG_MEM:
 	}
 
-	current := simulator.memory[dest]
+	current := simulator.register[dest]
 	curFlags := simulator.flags
 	regName := REGISTERS_NAME[dest]
 	operationStr, _ := i.Disassemble()
@@ -51,8 +51,8 @@ func (i *ArithmeticInstruction) SimulateRegRM(simulator *Simulator) {
 }
 func (i *ArithmeticInstruction) SimulateImmediate(simulator *Simulator) {
 	prevFlags := simulator.flags
-	previous := simulator.memory[i.rm]
-	value := simulator.memory[i.rm]
+	previous := simulator.register[i.rm]
+	value := simulator.register[i.rm]
 
 	switch i.op {
 	case SUB_IMMEDIATE_RM:
@@ -77,10 +77,10 @@ func (i *ArithmeticInstruction) SimulateImmediate(simulator *Simulator) {
 
 	switch i.op {
 	case SUB_IMMEDIATE_RM, ADD_IMMEDIATE_RM:
-		simulator.memory[i.rm] = value
+		simulator.register[i.rm] = value
 	case CMP_IMMEDIATE_RM:
 	}
-	current := simulator.memory[i.rm]
+	current := simulator.register[i.rm]
 	regName := REGISTERS_NAME[i.rm]
 	curFlags := simulator.flags
 	operationStr, _ := i.Disassemble()
