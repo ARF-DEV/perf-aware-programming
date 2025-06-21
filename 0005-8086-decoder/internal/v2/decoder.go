@@ -46,7 +46,7 @@ func (i *InstructionDecoder) Statements() Statements {
 	return i.statements
 }
 
-func (i *InstructionDecoder) Decode(simulate bool) {
+func (i *InstructionDecoder) Decode(simulate bool, dump bool) {
 	for i.Next() {
 		b := i.CurrentByte()
 		prevIdx := i.curIdx
@@ -73,6 +73,9 @@ func (i *InstructionDecoder) Decode(simulate bool) {
 
 	if simulate {
 		fmt.Println(i.simulator.String())
+	}
+	if dump {
+		i.simulator.DumpMemory("simulator_data.data")
 	}
 }
 

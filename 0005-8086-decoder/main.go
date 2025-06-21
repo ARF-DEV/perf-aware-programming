@@ -9,6 +9,7 @@ import (
 
 func main() {
 	flagExec := flag.Bool("exec", false, "exec asm")
+	flagDump := flag.Bool("dump", false, "dump final memory state")
 	flag.Parse()
 	args := flag.Args()
 	if len(args) != 1 {
@@ -18,7 +19,7 @@ func main() {
 	filename := flag.Args()[0]
 
 	decoder := internal.NewDecoder(filename)
-	decoder.Decode(*flagExec)
+	decoder.Decode(*flagExec, *flagDump)
 	if *flagExec {
 		return
 	}

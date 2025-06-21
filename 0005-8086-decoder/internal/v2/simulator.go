@@ -2,6 +2,7 @@ package internal
 
 import (
 	"fmt"
+	"os"
 	"strings"
 )
 
@@ -18,6 +19,15 @@ func (s *Simulator) String() string {
 	fmt.Fprintf(&b, "ip: 0x%04x (%d)\n", uint64(*s.ip), *s.ip)
 	fmt.Fprintln(&b, "Final flags: ", s.flags)
 	return b.String()
+}
+
+func (s *Simulator) DumpMemory(file string) error {
+	f, err := os.OpenFile(file, os.O_CREATE|os.O_WRONLY, 0664)
+	if err != nil {
+		return err
+	}
+	_, err = f.Write(s.memory[:])
+	return err
 }
 
 // func NewSimulator(statements Statements) InstructionSimulator {
