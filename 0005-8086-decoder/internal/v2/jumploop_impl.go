@@ -65,7 +65,7 @@ func (i *JumpLoopInstruction) String() string {
 	return ""
 }
 
-func (i *JumpLoopInstruction) Disassemble() (string, error) {
+func (i *JumpLoopInstruction) Disassemble(clocks *int) (string, error) {
 	opStr := jumpLoopTable[i.opByte]
 	return fmt.Sprintf("%s %d", opStr, i.ipInc), nil
 }

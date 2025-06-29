@@ -19,14 +19,14 @@ func (i *MovInstruction) SimulateMovImmideateToRegisterMemory(sim *Simulator) {
 		memoryAddress := i.handleEffectiveAddressCalculation(sim)
 		sim.memory[memoryAddress] = uint8(i.data)
 		sim.memory[memoryAddress+1] = uint8(i.data >> 8)
-		operationStr, _ := i.Disassemble()
+		operationStr, _ := i.Disassemble(&sim.clocks)
 		fmt.Printf("%s; ", operationStr)
 	} else {
 		previous := sim.register[i.rm]
 		sim.register[i.rm] = i.data
 		current := sim.register[i.rm]
 		regName := REGISTERS_NAME[i.rm]
-		operationStr, _ := i.Disassemble()
+		operationStr, _ := i.Disassemble(&sim.clocks)
 		fmt.Printf("%s; %s:0x%x->0x%x (%v); ", operationStr, regName, uint16(previous), uint16(current), current)
 	}
 }
@@ -35,7 +35,7 @@ func (i *MovInstruction) SimulateMovImmidiateToRegister(sim *Simulator) {
 	sim.register[i.reg] = i.data
 	current := sim.register[i.reg]
 	regName := REGISTERS_NAME[i.reg]
-	operationStr, _ := i.Disassemble()
+	operationStr, _ := i.Disassemble(&sim.clocks)
 	fmt.Printf("%s; %s:0x%x->0x%x (%v); ", operationStr, regName, uint16(previous), uint16(current), current)
 }
 
@@ -50,7 +50,7 @@ func (i *MovInstruction) SimulateMovRMFromToRegister(sim *Simulator) {
 			sim.memory[memoryAddress] = uint8(sim.register[i.reg])
 			sim.memory[memoryAddress+1] = uint8(sim.register[i.reg] >> 8)
 		}
-		operationStr, _ := i.Disassemble()
+		operationStr, _ := i.Disassemble(&sim.clocks)
 		fmt.Printf("%s; ", operationStr)
 	} else {
 		var dest, src uint8 = 0, 0
@@ -65,7 +65,7 @@ func (i *MovInstruction) SimulateMovRMFromToRegister(sim *Simulator) {
 		sim.register[dest] = sim.register[src]
 		current := sim.register[dest]
 		regName := REGISTERS_NAME[dest]
-		operationStr, _ := i.Disassemble()
+		operationStr, _ := i.Disassemble(&sim.clocks)
 		fmt.Printf("%s; %s:0x%x->0x%x (%v); ", operationStr, regName, uint16(previous), uint16(current), current)
 	}
 }

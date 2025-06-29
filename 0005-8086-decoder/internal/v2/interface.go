@@ -2,7 +2,7 @@ package internal
 
 type InstructionStatement interface {
 	String() string
-	Disassemble() (string, error)
+	Disassemble(clocks *int) (string, error)
 	Simulate(simulator *Simulator)
 	isInstruction()
 }

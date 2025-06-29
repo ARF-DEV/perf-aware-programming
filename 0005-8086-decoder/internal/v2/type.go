@@ -9,7 +9,7 @@ type InstructionFunc func() InstructionStatement
 type OpMode uint8
 type RegisterTable map[byte]string
 
-type DecoderFunc func() string
+type DecoderFunc func(*int) string
 type DecoderFuncTable map[OpMode]DecoderFunc
 
 type SimulateFunc func(sim *Simulator)

@@ -11,6 +11,7 @@ type Simulator struct {
 	flags    Flags
 	ip       *int64 // instruction pointer
 	memory   Memory
+	clocks   int
 }
 
 func (s *Simulator) String() string {

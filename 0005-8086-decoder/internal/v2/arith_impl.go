@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 type ArithmeticInstruction struct {
@@ -15,12 +16,12 @@ type ArithmeticInstruction struct {
 func (i *ArithmeticInstruction) String() string {
 	return fmt.Sprintf("op:%d\nd:%d\tw:%d\tmod:%02b\treg:%03b\trm:%03b\nlo:%08b\thi:%08b\ndata:%d", i.op, i.d, i.w, i.mod, i.reg, i.rm, i.lo, i.hi, i.data)
 }
-func (i *ArithmeticInstruction) Disassemble() (string, error) {
+func (i *ArithmeticInstruction) Disassemble(clocks *int) (string, error) {
 	decode, found := i.getDecoderFuncMap()[i.op]
 	if !found {
 		return "", fmt.Errorf("error: operation not implemented")
 	}
-	return decode(), nil
+	return decode(clocks), nil
 }
 
 func (i *ArithmeticInstruction) Simulate(simulator *Simulator) {
@@ -61,9 +62,11 @@ func (i *ArithmeticInstruction) getSimulateFuncMap() SimulateFuncTable {
 		// CMP_ACC:          i.decodeAccumulator,
 	}
 }
-func (i *ArithmeticInstruction) decodeRM() string {
+func (i *ArithmeticInstruction) decodeRM(clocks *int) string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
+	addClocks := i.estimateClocks()
+	*clocks += addClocks
 	if i.isEffectiveAddress() {
 		if i.isDisplacement() {
 			displacement := i.handleDisplacepment()
@@ -93,13 +96,44 @@ func (i *ArithmeticInstruction) decodeRM() string {
 		dst = rmStr
 	}
 
-	decode = fmt.Sprintf("%s %s, %s", decode, dst, src)
+	decode = fmt.Sprintf("%s %s, %s; Clocks += %d -> %d", decode, dst, src, addClocks, *clocks)
 	return decode
 }
 
-func (i *ArithmeticInstruction) decodeImmediate() string {
+func (i *ArithmeticInstruction) estimateClocks() int {
+	clocks := 0
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
-
+	if i.isEffectiveAddress() {
+		// displacement := i.handleDisplacepment()
+		if strings.Contains(rmStr, "+") {
+			switch rmStr {
+			case "bp + di", "bx + si":
+				clocks += 7
+			case "bp + si", "bx + di":
+				clocks += 8
+			}
+		} else if !i.isDirectAccess() {
+			clocks += 5
+		}
+		if i.isDisplacement() && i.handleDisplacepment() != 0 {
+			clocks += 4
+		} else if i.isDirectAccess() {
+			clocks += 6
+		}
+		if i.isDestination() {
+			clocks += 9
+		} else {
+			clocks += 16
+		}
+	} else {
+		clocks += 3
+	}
+	return clocks
+}
+func (i *ArithmeticInstruction) decodeImmediate(clocks *int) string {
+	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
+	// TBD
+	*clocks += 4
 	if i.isEffectiveAddress() {
 		if i.isDisplacement() {
 			displacement := i.handleDisplacepment()
@@ -131,10 +165,10 @@ func (i *ArithmeticInstruction) decodeImmediate() string {
 	// if i.isEffectiveAddress() {
 	// }
 
-	decode = fmt.Sprintf("%s %s, %s", decode, dst, src)
+	decode = fmt.Sprintf("%s %s, %s; Clocks += 4 -> %d", decode, dst, src, *clocks)
 	return decode
 }
-func (i *ArithmeticInstruction) decodeAccumulator() string {
+func (i *ArithmeticInstruction) decodeAccumulator(clocks *int) string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 
 	var dst, src string

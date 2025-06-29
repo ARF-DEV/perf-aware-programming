@@ -57,10 +57,8 @@ func (i *InstructionDecoder) Decode(simulate bool, dump bool) {
 			}
 			stmt := ins()
 			if simulate {
-				// todo the jump we can use the i.nextIdx to set the next instruction to run
 				stmt.Simulate(&i.simulator)
 			}
-			// fmt.Println(i.nextIdx)
 			i.statements = append(i.statements, stmt)
 			break
 		}
@@ -81,7 +79,7 @@ func (i *InstructionDecoder) Decode(simulate bool, dump bool) {
 
 func (i *InstructionDecoder) Disassemble(writer io.StringWriter) error {
 	for _, stmt := range i.statements {
-		v, err := stmt.Disassemble()
+		v, err := stmt.Disassemble(&i.simulator.clocks)
 		if err != nil {
 			return err
 		}
@@ -89,6 +87,7 @@ func (i *InstructionDecoder) Disassemble(writer io.StringWriter) error {
 		// fmt.Println(stmt)
 		// fmt.Println()
 	}
+	fmt.Println(i.simulator.clocks)
 	return nil
 }
 

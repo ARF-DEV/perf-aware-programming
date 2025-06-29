@@ -46,7 +46,7 @@ func (i *ArithmeticInstruction) SimulateRegRM(simulator *Simulator) {
 	current := simulator.register[dest]
 	curFlags := simulator.flags
 	regName := REGISTERS_NAME[dest]
-	operationStr, _ := i.Disassemble()
+	operationStr, _ := i.Disassemble(&simulator.clocks)
 	fmt.Printf("%s; %s:0x%x->0x%x (%d); flags:%v->%v; ", operationStr, regName, uint16(previous), uint16(current), current, prevFlags.String(), curFlags.String())
 }
 func (i *ArithmeticInstruction) SimulateImmediate(simulator *Simulator) {
@@ -83,6 +83,6 @@ func (i *ArithmeticInstruction) SimulateImmediate(simulator *Simulator) {
 	current := simulator.register[i.rm]
 	regName := REGISTERS_NAME[i.rm]
 	curFlags := simulator.flags
-	operationStr, _ := i.Disassemble()
+	operationStr, _ := i.Disassemble(&simulator.clocks)
 	fmt.Printf("%s; %s:0x%x->0x%x (%d); flags:%v->%v; ", operationStr, regName, uint16(previous), uint16(current), current, prevFlags, curFlags)
 }

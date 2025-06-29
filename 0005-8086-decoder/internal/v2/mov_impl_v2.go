@@ -3,6 +3,7 @@ package internal
 import (
 	"fmt"
 	"log"
+	"strings"
 )
 
 type MovInstruction struct {
@@ -15,12 +16,12 @@ type MovInstruction struct {
 func (i *MovInstruction) String() string {
 	return fmt.Sprintf("op:%d\nd:%d\tw:%d\tmod:%02b\treg:%03b\trm:%03b\nlo:%08b\thi:%08b\ndata:%d", i.op, i.d, i.w, i.mod, i.reg, i.rm, i.lo, i.hi, i.data)
 }
-func (i *MovInstruction) Disassemble() (string, error) {
+func (i *MovInstruction) Disassemble(clocks *int) (string, error) {
 	decode, found := i.getDecoderFuncMap()[i.op]
 	if !found {
 		return "", fmt.Errorf("error: operation not implemented")
 	}
-	return decode(), nil
+	return decode(clocks), nil
 }
 
 func (i *MovInstruction) Simulate(simulator *Simulator) {
@@ -46,9 +47,11 @@ func (i *MovInstruction) getDecoderFuncMap() DecoderFuncTable {
 	}
 }
 
-func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
+func (i *MovInstruction) decodeMovRegisterFromToMemory(clocks *int) string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
+	addClocks := i.estimateClocks()
+	*clocks += addClocks
 	if i.isEffectiveAddress() {
 		if i.isDisplacement() {
 			displacement := i.handleDisplacepment()
@@ -68,7 +71,6 @@ func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
 		}
 		rmStr = fmt.Sprintf("[%s]", rmStr)
 	}
-
 	var dst, src, decode string
 	decode = "mov"
 	if i.isDestination() {
@@ -79,16 +81,47 @@ func (i *MovInstruction) decodeMovRegisterFromToMemory() string {
 		dst = rmStr
 	}
 
-	decode = fmt.Sprintf("%s %s, %s", decode, dst, src)
+	decode = fmt.Sprintf("%s %s, %s; Clocks += %d -> %d", decode, dst, src, addClocks, *clocks)
 	return decode
 }
-
-func (i *MovInstruction) decodeMovImmediateToRegister() string {
-	regStr := RegisterTab.Get(0b11, i.w, i.reg)
-	return fmt.Sprintf("mov %s, %d", regStr, i.data)
+func (i *MovInstruction) estimateClocks() int {
+	clocks := 0
+	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
+	if i.isEffectiveAddress() {
+		// displacement := i.handleDisplacepment()
+		if strings.Contains(rmStr, "+") {
+			switch rmStr {
+			case "bp + di", "bx + si":
+				clocks += 7
+			case "bp + si", "bx + di":
+				clocks += 8
+			}
+		} else if !i.isDirectAccess() {
+			clocks += 5
+		}
+		if i.isDisplacement() && i.handleDisplacepment() != 0 {
+			clocks += 4
+		} else if i.isDirectAccess() {
+			clocks += 6
+		}
+		if i.isDestination() {
+			clocks += 8
+		} else {
+			clocks += 9
+		}
+	} else {
+		clocks += 2
+	}
+	return clocks
 }
 
-func (i *MovInstruction) decodeMovImmediateToRegisterMemory() string {
+func (i *MovInstruction) decodeMovImmediateToRegister(clocks *int) string {
+	regStr := RegisterTab.Get(0b11, i.w, i.reg)
+	*clocks += 4
+	return fmt.Sprintf("mov %s, %d; Clocks += 4 -> %d", regStr, i.data, *clocks)
+}
+
+func (i *MovInstruction) decodeMovImmediateToRegisterMemory(clocks *int) string {
 	rmStr := RegisterTab.Get(i.mod, i.w, i.rm)
 
 	if i.isEffectiveAddress() {
@@ -123,7 +156,7 @@ func (i *MovInstruction) decodeMovImmediateToRegisterMemory() string {
 	decode = fmt.Sprintf("%s %s, %s", decode, dst, src)
 	return decode
 }
-func (i *MovInstruction) decodeMovAccumulatorFromToMemory() string {
+func (i *MovInstruction) decodeMovAccumulatorFromToMemory(clocks *int) string {
 	regStr := RegisterTab.Get(0b11, i.w, i.reg)
 
 	var dst, src string
