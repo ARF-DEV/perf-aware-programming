@@ -147,7 +147,7 @@ func (l *Lexer) getString() string {
 	return str
 }
 func (l *Lexer) isNumber(c byte) bool {
-	return (c >= '0' && c <= '9') || c == '-'
+	return (c >= '0' && c <= '9') || c == '-' || c == '.'
 }
 func (l *Lexer) isString(c byte) bool {
 	return c == '"' || c == '\''
