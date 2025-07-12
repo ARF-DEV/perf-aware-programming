@@ -5,6 +5,7 @@ import (
 	"log"
 	"os"
 	"parttwo/processor/lexer"
+	"parttwo/processor/parser"
 )
 
 func main() {
@@ -19,5 +20,9 @@ func main() {
 
 	l := lexer.New(string(input))
 	l.Process()
-	fmt.Println(l.Tokens)
+
+	p := parser.New(&l)
+	p.Process()
+
+	fmt.Println(p.Nodes)
 }
