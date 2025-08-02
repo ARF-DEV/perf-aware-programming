@@ -7,6 +7,7 @@ import (
 
 type Node interface {
 	TokenValue() lexer.Value
+	String() string
 }
 type Nodes []Node
 
@@ -18,4 +19,4 @@ func (n Nodes) String() string {
 	return str
 }
 
-type NodeParseFunc func(*lexer.Token) (Node, error)
+type NodeParseFunc func() (Node, error)
