@@ -8,6 +8,11 @@ import (
 	"parttwo/processor/parser"
 )
 
+type A struct {
+	Test int
+	B    int
+}
+
 func main() {
 	args := os.Args
 	if len(args) < 2 {
@@ -23,6 +28,10 @@ func main() {
 
 	p := parser.New(&l)
 	p.Process()
+	var apa map[string]any = map[string]any{}
+	if err := p.Decode(&apa); err != nil {
+		log.Fatal(err)
+	}
 
-	fmt.Println(p.Node)
+	fmt.Println(apa)
 }
