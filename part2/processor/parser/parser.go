@@ -45,9 +45,6 @@ func (p *Parser) nextIndex() {
 	p.idx++
 }
 
-//	func (p *Parser) parseNode(token lexer.Token) ast.Node {
-//		return nil
-//	}
 func (p *Parser) getNodeParseFunc(token *lexer.Token) (ast.NodeParseFunc, bool) {
 	parse, found := nodeParseFuncMap[token.Type]
 	return parse, found
@@ -55,5 +52,5 @@ func (p *Parser) getNodeParseFunc(token *lexer.Token) (ast.NodeParseFunc, bool) 
 
 var nodeParseFuncMap map[lexer.Type]ast.NodeParseFunc = map[lexer.Type]ast.NodeParseFunc{
 	lexer.STRING: ast.ParseStringNode,
-	lexer.NUMBER: ast.ParseIntegerNode,
+	lexer.NUMBER: ast.ParseNumberNode,
 }

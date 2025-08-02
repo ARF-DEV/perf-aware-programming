@@ -13,7 +13,7 @@ type Nodes []Node
 func (n Nodes) String() string {
 	str := ""
 	for _, node := range n {
-		str += fmt.Sprintln(node.TokenValue())
+		str += fmt.Sprintln(node)
 	}
 	return str
 }

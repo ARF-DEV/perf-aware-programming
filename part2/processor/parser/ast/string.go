@@ -3,7 +3,7 @@ package ast
 import "parttwo/processor/lexer"
 
 type String struct {
-	Token *lexer.Token
+	Token lexer.Token
 	Value string
 }
 
@@ -13,7 +13,7 @@ func (s *String) TokenValue() lexer.Value {
 
 func ParseStringNode(token *lexer.Token) (Node, error) {
 	s := &String{
-		Token: token,
+		Token: *token,
 		Value: string(token.Value),
 	}
 	return s, nil
