@@ -9,42 +9,86 @@ import (
 
 type Parser struct {
 	lexer *lexer.Lexer
-	Nodes ast.Nodes
+	Node  ast.Node
 
-	idx int
+	idx      int
+	curDepth int
 }
 
 func New(lexer *lexer.Lexer) *Parser {
 	p := &Parser{
-		lexer: lexer,
-		Nodes: ast.Nodes{},
-		idx:   0,
+		lexer:    lexer,
+		idx:      0,
+		Node:     nil,
+		curDepth: 0,
 	}
 	return p
 }
 
-func (p *Parser) Process() error {
+func (p *Parser) Process() (err error) {
+	parse, found := p.getNodeParseFunc(p.currentToken())
+	if !found {
+		return fmt.Errorf("error no opening '{'")
+	}
+	p.Node, err = parse()
+	return err
+}
+func (p *Parser) parseObject() (ast.Node, error) {
+	p.curDepth++
+	node := ast.Object{LToken: *p.currentToken(), Depth: p.curDepth}
+	p.nextIndex()
 	for ; p.idx < len(p.lexer.Tokens); p.nextIndex() {
 		p.skipToken(lexer.COMMA)
+		if p.curTokenIs(lexer.RIGHT_CURLY_BRACKET) {
+			break
+		}
 		parse, found := p.getNodeParseFunc(p.currentToken())
 		if !found {
-			log.Printf("debug: parser for token -> %v isn't implemented yet", p.currentToken())
+			log.Printf("debug: parser for token -> %v isn't implemented yet, depth: %d", p.currentToken(), p.curDepth)
 			continue
 		}
 		newNode, err := parse()
 		if err != nil {
-			return err
+			return nil, err
 		}
-		p.Nodes = append(p.Nodes, newNode)
-
+		node.Values = append(node.Values, newNode)
 	}
-	return nil
+	node.RToken = *p.currentToken()
+	p.curDepth--
+	return &node, nil
+}
+func (p *Parser) parseArray() (ast.Node, error) {
+	p.curDepth++
+	node := ast.Array{LToken: *p.currentToken(), Depth: p.curDepth}
+	p.nextIndex()
+	for ; p.idx < len(p.lexer.Tokens); p.nextIndex() {
+		p.skipToken(lexer.COMMA)
+		if p.curTokenIs(lexer.RIGHT_SQUARE_BRACKET) {
+			break
+		}
+		parse, found := p.getNodeParseFunc(p.currentToken())
+		if !found {
+			log.Printf("debug: parser for token -> %v isn't implemented yet, depth: %d", p.currentToken(), p.curDepth)
+			continue
+		}
+		newNode, err := parse()
+		if err != nil {
+			return nil, err
+		}
+		node.Values = append(node.Values, newNode)
+	}
+	node.RToken = *p.currentToken()
+	p.curDepth--
+	return &node, nil
 }
 
 func (p *Parser) skipToken(tokenType lexer.Type) {
 	for p.currentToken().Type == tokenType {
 		p.nextIndex()
 	}
+}
+func (p *Parser) curTokenIs(tokenType lexer.Type) bool {
+	return p.currentToken().Type == tokenType
 }
 
 func (p *Parser) currentToken() *lexer.Token {
@@ -63,9 +107,10 @@ func (p *Parser) nextIndex() {
 
 func (p *Parser) getNodeParseFunc(token *lexer.Token) (ast.NodeParseFunc, bool) {
 	var nodeParseFuncMap map[lexer.Type]ast.NodeParseFunc = map[lexer.Type]ast.NodeParseFunc{
-		lexer.STRING: p.parseStringNode,
-		lexer.NUMBER: p.parseNumberNode,
-		// lexer.LEFT_CURLY_BRACKET: p.parseNodes,
+		lexer.STRING:              p.parseStringNode,
+		lexer.NUMBER:              p.parseNumberNode,
+		lexer.LEFT_CURLY_BRACKET:  p.parseObject,
+		lexer.LEFT_SQUARE_BRACKET: p.parseArray,
 	}
 	parse, found := nodeParseFuncMap[token.Type]
 	return parse, found

@@ -24,5 +24,5 @@ func main() {
 	p := parser.New(&l)
 	p.Process()
 
-	fmt.Println(p.Nodes)
+	fmt.Println(p.Node)
 }

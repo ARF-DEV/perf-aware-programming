@@ -11,7 +11,7 @@ type Integer struct {
 }
 
 func (s *Integer) String() string {
-	return fmt.Sprintf("%v %v", s.Token, s.Value)
+	return fmt.Sprintf("%v", s.Value)
 }
 func (n *Integer) TokenValue() lexer.Value {
 	return n.Token.Value
@@ -28,5 +28,5 @@ func (n *Float) TokenValue() lexer.Value {
 }
 
 func (s *Float) String() string {
-	return fmt.Sprintf("%v %v", s.Token, s.Value)
+	return fmt.Sprintf("%v", s.Value)
 }

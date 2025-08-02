@@ -16,5 +16,5 @@ func (n *KeyValuePair) TokenValue() lexer.Value {
 }
 
 func (s *KeyValuePair) String() string {
-	return fmt.Sprintf("%v | %v | %v", s.Left, s.Token, s.Right)
+	return fmt.Sprintf("%v  %v  %v", s.Left, s.Token.Value, s.Right)
 }
