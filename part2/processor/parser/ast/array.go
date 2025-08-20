@@ -6,19 +6,19 @@ import (
 	"strings"
 )
 
-type Object struct {
+type Array struct {
 	LToken, RToken lexer.Token
 	Values         Nodes
 	Depth          int
 }
 
-func (s *Object) TokenValue() lexer.Value {
+func (s *Array) TokenValue() lexer.Value {
 	return s.LToken.Value
 }
 
-func (s *Object) String() string {
+func (s *Array) String() string {
 	if len(s.Values) == 0 {
-		return "{}"
+		return "[]"
 	}
 	var str string = fmt.Sprintf("%v\n", s.LToken.Value)
 	tabs := strings.Repeat("\t", s.Depth)

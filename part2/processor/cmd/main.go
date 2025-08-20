@@ -28,10 +28,10 @@ func main() {
 
 	p := parser.New(&l)
 	p.Process()
-	var apa map[string]any = map[string]any{}
+	var apa map[string]string = map[string]string{}
+	// apa := []any{}
 	if err := p.Decode(&apa); err != nil {
 		log.Fatal(err)
 	}
-
-	fmt.Println(apa)
+	fmt.Printf("%+v\n", apa)
 }
