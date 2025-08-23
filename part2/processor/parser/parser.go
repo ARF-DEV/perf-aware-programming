@@ -87,7 +87,7 @@ func (p *Parser) Decode(v any) error {
 		return parseToArray(p.Node, rv)
 	case reflect.Struct:
 		// TODO
-		return fmt.Errorf("TODO")
+		return parseToStruct(p.Node, rv)
 	}
 
 	return fmt.Errorf("cannot process value of type %v", rv.Type())
@@ -119,6 +119,67 @@ func parseToArray(node ast.Node, s reflect.Value) error {
 	}
 	return nil
 }
+func parseToStruct(node ast.Node, st reflect.Value) error {
+	switch actual := node.(type) {
+	case *ast.Object:
+		return parseStruct(actual, st)
+	default:
+		return fmt.Errorf("cannot parse node of type %T to %v", node, st.Type())
+	}
+}
+func parseStruct(obj *ast.Object, st reflect.Value) error {
+	nodeMap := map[lexer.Value]*ast.KeyValuePair{}
+	for _, kv := range obj.Values {
+		actualKv, isPair := kv.(*ast.KeyValuePair)
+		if !isPair {
+			log.Printf("%v is not key value pair", kv)
+			continue
+		}
+		nodeMap[actualKv.Left.TokenValue()] = actualKv
+	}
+
+	len := st.NumField()
+	stv := st.Type()
+	for i := 0; i < len; i++ {
+		field := st.Field(i)
+		fieldType := stv.Field(i)
+
+		// fmt.Printf("%+v: %+v\n", fieldType.Tag.Get("json"), nodeMap[lexer.Value(fieldType.Tag.Get("json"))])
+		key := lexer.Value(fieldType.Tag.Get("json"))
+		kvValue, found := nodeMap[key]
+		if !found {
+			log.Printf("key %v not found", key)
+			continue
+		}
+		var value any
+		switch tkActual := kvValue.Right.(type) {
+		case *ast.String:
+			value = tkActual.Value
+		case *ast.Float:
+			value = tkActual.Value
+		case *ast.Integer:
+			value = tkActual.Value
+		case *ast.Object:
+			parseStruct(tkActual, field)
+			continue
+		case *ast.Array:
+			v, err := parseArray(tkActual)
+			if err != nil {
+				return err
+			}
+			value = v
+		}
+
+		if err := setField(field, reflect.ValueOf(value)); err != nil {
+			return err
+		}
+
+	}
+
+	// fmt.Printf("final %+v\n", st)
+	return nil
+}
+
 func parseObject(obj *ast.Object, m reflect.Value) (err error) {
 	for _, value := range obj.Values {
 		kp, ok := value.(*ast.KeyValuePair)
@@ -189,21 +250,65 @@ func parseArray(arrayNode *ast.Array) ([]any, error) {
 		}
 
 		values = append(values, value)
-		// newSlice := reflect.Append(s, reflect.ValueOf(value))
-		// s.Set(newSlice)
-		// fmt.Println(s)
-		// // anyArray = append(anyArray, value)
 	}
 	return values, nil
 }
+
+func setField(f reflect.Value, v reflect.Value) error {
+	if !v.Type().AssignableTo(f.Type()) && !v.Type().ConvertibleTo(f.Type()) {
+		return fmt.Errorf("value of type %v cannot be assign to field of type %v", v.Type(), f.Type())
+	}
+	switch f.Kind() {
+	case reflect.String:
+		f.SetString(v.String())
+	case reflect.Float32, reflect.Float64:
+		kind := v.Kind()
+		if kind != reflect.Float32 && kind != reflect.Float64 {
+			v = intToFloat(v)
+		}
+		f.SetFloat(v.Float())
+	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int8:
+		kind := v.Kind()
+		if kind != reflect.Int && kind != reflect.Int8 && kind != reflect.Int16 &&
+			kind != reflect.Int32 && kind != reflect.Int64 {
+			v = floatToInt(v)
+		}
+		f.SetInt(v.Int())
+	}
+	return nil
+}
+
+func floatToInt(v reflect.Value) reflect.Value {
+	value := int64(v.Float())
+	return reflect.ValueOf(value)
+}
+func intToFloat(v reflect.Value) reflect.Value {
+	value := float64(v.Int())
+	return reflect.ValueOf(value)
+}
+
 func setMap(m reflect.Value, k, v reflect.Value) error {
 	if !k.Type().AssignableTo(m.Type().Key()) {
 		return fmt.Errorf("value of type %v cannot be assign to field of type %v", k.Type(), m.Type().Key())
 	}
-	if !v.Type().AssignableTo(m.Type().Elem()) {
+	if !v.Type().AssignableTo(m.Type().Elem()) && !v.Type().ConvertibleTo(m.Type().Elem()) {
 		return fmt.Errorf("value of type %v cannot be assign to field of type %v", v.Type(), m.Type().Elem())
 	}
-
+	target := m.Type().Elem()
+	switch target.Kind() {
+	case reflect.String, reflect.Slice, reflect.Array, reflect.Struct:
+	case reflect.Float32, reflect.Float64:
+		kind := v.Kind()
+		if kind != reflect.Float32 && kind != reflect.Float64 {
+			v = intToFloat(v)
+		}
+	case reflect.Int, reflect.Int16, reflect.Int32, reflect.Int64, reflect.Int8:
+		kind := v.Kind()
+		if kind != reflect.Int && kind != reflect.Int8 && kind != reflect.Int16 &&
+			kind != reflect.Int32 && kind != reflect.Int64 {
+			v = floatToInt(v)
+		}
+	}
 	m.SetMapIndex(k, v)
 	return nil
 }

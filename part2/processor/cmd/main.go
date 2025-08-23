@@ -8,9 +8,14 @@ import (
 	"parttwo/processor/parser"
 )
 
-type A struct {
-	Test int
-	B    int
+type Person struct {
+	Name      string  `json:"name"`
+	Age       int     `json:"age"`
+	Balance   float64 `json:"balance"`
+	Education struct {
+		InstitutionName string `json:"institution_name"`
+		Degree          string `json:"degree"`
+	} `json:"current_education"`
 }
 
 func main() {
@@ -28,8 +33,9 @@ func main() {
 
 	p := parser.New(&l)
 	p.Process()
-	var apa map[string]string = map[string]string{}
+	// var apa map[string]float64 = map[string]float64{}
 	// apa := []any{}
+	apa := Person{}
 	if err := p.Decode(&apa); err != nil {
 		log.Fatal(err)
 	}

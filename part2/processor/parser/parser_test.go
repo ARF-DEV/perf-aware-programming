@@ -101,16 +101,16 @@ func TestJSONToArray(t *testing.T) {
 	cases := []struct {
 		Name        string
 		InputPath   string
-		Expected    []any
+		Expected    any
 		ExpectedErr error
-		Out         []any
+		Out         any
 	}{
 		{
 			Name:        "success",
 			InputPath:   "./tests/test_array_same_type.json",
-			Expected:    []any{"test", "test", "test", "test"},
+			Expected:    []string{"test", "test", "test", "test"},
 			ExpectedErr: nil,
-			Out:         []any{},
+			Out:         &[]string{},
 		},
 	}
 	for _, c := range cases {
@@ -121,7 +121,7 @@ func TestJSONToArray(t *testing.T) {
 			l.Process()
 			p := New(&l)
 			p.Process()
-			err = p.Decode(&c.Out)
+			err = p.Decode(c.Out)
 			assert.Equal(t, c.ExpectedErr, err)
 		})
 	}
