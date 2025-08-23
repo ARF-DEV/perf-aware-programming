@@ -97,6 +97,34 @@ func TestJSONToMap(t *testing.T) {
 
 }
 
-func TestJSONToArray(t *testing.T) {}
+func TestJSONToArray(t *testing.T) {
+	cases := []struct {
+		Name        string
+		InputPath   string
+		Expected    []any
+		ExpectedErr error
+		Out         []any
+	}{
+		{
+			Name:        "success",
+			InputPath:   "./tests/test_array_same_type.json",
+			Expected:    []any{"test", "test", "test", "test"},
+			ExpectedErr: nil,
+			Out:         []any{},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.Name, func(t *testing.T) {
+			input, err := os.ReadFile(c.InputPath)
+			assert.Nil(t, err)
+			l := lexer.New(string(input))
+			l.Process()
+			p := New(&l)
+			p.Process()
+			err = p.Decode(&c.Out)
+			assert.Equal(t, c.ExpectedErr, err)
+		})
+	}
+}
 
 func TestJSONToStruct(t *testing.T) {}
