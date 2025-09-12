@@ -127,4 +127,57 @@ func TestJSONToArray(t *testing.T) {
 	}
 }
 
-func TestJSONToStruct(t *testing.T) {}
+func TestJSONToStruct(t *testing.T) {
+	cases := []struct {
+		name        string
+		inputPath   string
+		expected    any
+		expectedErr error
+		out         any
+	}{
+		{
+			name:      "parse to struct success",
+			inputPath: "./tests/test_struct_success.json",
+			expected: Person{
+				Name:    "arief",
+				Age:     12,
+				Balance: 200,
+				Education: struct {
+					InstitutionName string "json:\"institution_name\""
+					Degree          string "json:\"degree\""
+				}{
+					InstitutionName: "apa cobaaa",
+					Degree:          "apa hayooo",
+				},
+				Scores: []int{2, 2, 4},
+			},
+			expectedErr: nil,
+			out:         &Person{},
+		},
+	}
+
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			input, err := os.ReadFile(c.inputPath)
+			assert.Nil(t, err)
+			l := lexer.New(string(input))
+			l.Process()
+			p := New(&l)
+			p.Process()
+			err = p.Decode(c.out)
+			assert.Equal(t, c.expectedErr, err)
+			assert.Equal(t, c.expected, reflect.ValueOf(c.out).Elem().Interface())
+		})
+	}
+}
+
+type Person struct {
+	Name      string  `json:"name"`
+	Age       int     `json:"age"`
+	Balance   float64 `json:"balance"`
+	Education struct {
+		InstitutionName string `json:"institution_name"`
+		Degree          string `json:"degree"`
+	} `json:"current_education"`
+	Scores []int `json:"scores"`
+}

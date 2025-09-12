@@ -86,7 +86,6 @@ func (p *Parser) Decode(v any) error {
 	case reflect.Slice:
 		return parseToArray(p.Node, rv)
 	case reflect.Struct:
-		// TODO
 		return parseToStruct(p.Node, rv)
 	}
 
@@ -109,11 +108,11 @@ func parseToMap(node ast.Node, m reflect.Value) error {
 func parseToArray(node ast.Node, s reflect.Value) error {
 	switch actual := node.(type) {
 	case *ast.Array:
-		values, err := parseArray(actual)
+		err := parseArray(actual, s)
 		if err != nil {
 			return err
 		}
-		s.Set(reflect.ValueOf(values))
+		fmt.Println("after parse array: ", s)
 	default:
 		return fmt.Errorf("cannot parse node of type %T to %v", node, s.Type())
 	}
@@ -163,11 +162,11 @@ func parseStruct(obj *ast.Object, st reflect.Value) error {
 			parseStruct(tkActual, field)
 			continue
 		case *ast.Array:
-			v, err := parseArray(tkActual)
+			err := parseArray(tkActual, field)
 			if err != nil {
 				return err
 			}
-			value = v
+			continue
 		}
 
 		if err := setField(field, reflect.ValueOf(value)); err != nil {
@@ -176,7 +175,6 @@ func parseStruct(obj *ast.Object, st reflect.Value) error {
 
 	}
 
-	// fmt.Printf("final %+v\n", st)
 	return nil
 }
 
@@ -208,11 +206,13 @@ func parseObject(obj *ast.Object, m reflect.Value) (err error) {
 			}
 			value = childMap
 		case *ast.Array:
-			v, err := parseArray(actualVal)
+			slice := []any{}
+			refSlice := reflect.ValueOf(&slice).Elem()
+			err := parseArray(actualVal, refSlice)
 			if err != nil {
 				return err
 			}
-			value = v
+			value = slice
 
 		default:
 			log.Printf("debug: not implemented for %v", actualVal)
@@ -225,8 +225,7 @@ func parseObject(obj *ast.Object, m reflect.Value) (err error) {
 	return nil
 }
 
-func parseArray(arrayNode *ast.Array) ([]any, error) {
-	values := []any{}
+func parseArray(arrayNode *ast.Array, s reflect.Value) error {
 	for _, arrayValue := range arrayNode.Values {
 		var value any
 		switch actualVal := arrayValue.(type) {
@@ -240,7 +239,7 @@ func parseArray(arrayNode *ast.Array) ([]any, error) {
 			childMap := map[string]any{}
 			rcm := reflect.ValueOf(childMap)
 			if err := parseToMap(actualVal, rcm); err != nil {
-				return nil, err
+				return err
 			}
 			value = childMap
 		// case *ast.Array:
@@ -248,10 +247,17 @@ func parseArray(arrayNode *ast.Array) ([]any, error) {
 			log.Printf("debug: not implemented for %v", actualVal)
 			continue
 		}
+		refv := reflect.ValueOf(value)
+		if !refv.Type().AssignableTo(s.Type().Elem()) && !refv.Type().ConvertibleTo(s.Type().Elem()) {
+			return fmt.Errorf("value %v (%v) cannot be assign to a slice of type %v", value, refv.Type(), s.Type().Elem())
+		}
 
-		values = append(values, value)
+		if refv.Type() != s.Type().Elem() {
+			refv = refv.Convert(s.Type().Elem())
+		}
+		s.Set(reflect.Append(s, refv))
 	}
-	return values, nil
+	return nil
 }
 
 func setField(f reflect.Value, v reflect.Value) error {
